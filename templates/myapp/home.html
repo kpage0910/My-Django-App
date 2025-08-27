@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="jumbotron bg-primary text-white p-5 rounded">
+            <h1 class="display-4">{{ title }}</h1>
+            <p class="lead">{{ message }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <h2>About Our Services</h2>
+        <p class="text-muted">Welcome to our amazing website! We've been serving customers since 2010 and pride ourselves on excellent service.</p>
+        
+        <p>Our mission is to provide the best user experience possible. We believe in quality, innovation, and putting our customers first.</p>
+        
+        <p>Whether you're here to learn, shop, or just browse, we hope you'll find exactly what you're looking for. Thanks for visiting!</p>
+        
+        <a href="/about/" class="btn btn-primary">Learn More About Us</a>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Links</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><a href="/">Home</a></li>
+                    <li class="list-group-item"><a href="/about/">About Us</a></li>
+                    <li class="list-group-item"><a href="/contact/">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
