@@ -1,43 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}My Django Site{% endblock %}</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Your custom CSS (optional - comes after Bootstrap) -->
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">My Site</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/about/">About</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    
-    <div class="container mt-4">
-        {% block content %}
-        {% endblock %}
-    </div>
-    
-    <!-- Bootstrap JavaScript -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+{% load static %}
+
+<html>
+  <head>
+    <title>{% block title %}My Django App{% endblock %}</title>
+
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{% static 'images/favicon.ico' %}"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{% static 'css/styles.css' %}"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr"
+      crossorigin="anonymous"
+    />
+    <!-- Font Awesome for icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+
+  <body class="container">
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-ndDqU0Gzau9qJ1lfW4pNLlhNTkCfHzAVBReH9diLvGRem5+R9g2FzA8ZGN954O5Q"
+      crossorigin="anonymous"
+    ></script>
+
+    <header
+      class="bg-dark-subtle text-center mb-4 mt-2 p-4 rounded-2 shadow-sm"
+    >
+      <h4>ISM 672 Django App 1.0</h4>
+      <ul class="nav justify-content-center">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'myapp:home' %}"> 🏠 Home </a>
+        </li>
+      </ul>
+    </header>
+
+    <main>
+      {% block content %}
+      <p>main content from template</p>
+      {% endblock %}
+    </main>
+
+    <footer
+      class="navbar mt-5 px-4 container bg-light-subtle shadow-sm rounded-4"
+    >
+      <div>
+        <img
+          src="{% static 'images/favicon.ico' %}"
+          alt="Logo"
+          class="mx-2 ratio-16x9"
+        />
+        <span class="small">ISM 672 DjangoApp 1.0 </span>
+      </div>
+
+      <div
+        class="me-2 small fst-italic text-secondary"
+        style="font-size: 0.8em"
+      >
+        &copy; Fall 2025
+        <span class="fw-bold">Kennedy Page</span>
+      </div>
+    </footer>
+  </body>
 </html>

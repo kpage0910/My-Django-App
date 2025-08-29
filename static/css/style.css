@@ -6,40 +6,33 @@ body {
     background-color: #f4f4f4;
 }
 
-nav {
-    background: #333;
-    padding: 1rem;
-    margin-bottom: 2rem;
+.courses-section {
+    background-color: #f5f5f5;
+    border-radius: 20px;
+    padding: 30px;
+    margin: 20px 0;
 }
 
-nav a {
-    color: white;
-    text-decoration: none;
-    margin-right: 1rem;
-    padding: 0.5rem;
-}
-
-nav a:hover {
-    background: #555;
-    border-radius: 3px;
-}
-
-main {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
-    background: white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-
-h1 {
+.courses-section h2 {
+    text-align: center;
+    margin-bottom: 30px;
     color: #333;
-    border-bottom: 3px solid #007bff;
-    padding-bottom: 10px;
-    margin-bottom: 1rem;
 }
 
-p {
-    margin-bottom: 1rem;
-    color: #666;
+/* Remove blue highlighting and style nav links */
+.nav-link {
+    color: #495057 !important;
+    text-decoration: none !important;
+}
+
+.nav-link:hover {
+    color: #007bff !important;
+    background-color: rgba(0, 123, 255, 0.1);
+    border-radius: 5px;
+}
+
+/* Remove active state blue highlighting */
+.nav-link.active {
+    color: #495057 !important;
+    background-color: transparent !important;
 }

@@ -5,5 +5,5 @@ app_name = 'myapp'  # Add namespace
 
 urlpatterns = [
     path('', views.home, name='home'),
-    path('about/', views.about, name='about'),
+    
 ]
