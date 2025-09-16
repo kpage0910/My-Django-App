@@ -1,0 +1,40 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+.home-container {
+    width: 100%;           /* Full width */
+    height: 100%;          /* Full height of main element */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;  /* Centers content vertically */
+    align-items: center;      /* Centers content horizontally */
+    padding: 2rem;
+    text-align: center;
+}
+
+.hero-section{
+    max-width: 600px;
+    margin: 2rem auto;
+    margin-top: 200px;
+    padding: 2rem;
+}
+
+.manage-btn{
+    text-decoration: none;
+    color: white;
+    background-color: black;
+    padding: 1.5rem 3rem;
+    min-height: 60px;
+    min-width: 200px;
+    border-radius: 5px;
+    font-size: 1.2rem;
+    transition: background-color 0.3s ease;
+}
+
+.manage-btn:hover {
+    background-color: #e0e0e0;
+}

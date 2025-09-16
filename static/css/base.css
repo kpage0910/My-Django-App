@@ -1,0 +1,56 @@
+/* Base styles for Django Traders */
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Full viewport height */
+}
+
+header {
+    display: flex;
+    
+    justify-content: space-between; /* Logo left, nav right */
+    align-items: center;
+    padding: 1rem 2rem;
+    
+}
+
+header h1 {
+    font-size: 1.5rem;
+}
+
+nav ul{
+    display: flex;
+    list-style: none;
+    gap: 2rem;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: black;
+    padding: 0.5rem 1rem;
+}
+
+nav ul li a:hover {
+    background-color: #f0f0f0;
+    border-radius: 5px;
+}
+
+main {
+    flex: 1;
+    padding: 2rem;
+}
+
+footer {
+    background-color: #f0f0f0;
+    color: black;
+    text-align: center;
+    padding: 1rem 0;
+}
+
