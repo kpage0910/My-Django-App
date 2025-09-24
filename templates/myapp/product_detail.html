@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/product_detail.css' %}">
+
+<div class="product-detail-container">
+    
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">Product Details</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{% url 'myapp:home' %}">Home</a> > 
+            <a href="{% url 'myapp:product_list' %}">Products</a> > 
+            {{ product.product_name }}
+        </nav>
+    </div>
+    
+    <!-- Product Information Card -->
+    <div class="product-card {% if product.is_discontinued %}discontinued-product{% endif %}">
+        
+        <!-- Product Header -->
+        <div class="product-header">
+            <h2 class="product-name">{{ product.product_name }}</h2>
+            {% if product.is_discontinued %}
+                <span class="discontinued-badge-large">DISCONTINUED</span>
+            {% else %}
+                <span class="active-badge">ACTIVE</span>
+            {% endif %}
+        </div>
+        
+        <!-- Product Details Grid -->
+        <div class="product-details-grid">
+            
+            <!-- Basic Information -->
+            <div class="detail-section">
+                <h3 class="section-title">Basic Information</h3>
+                <div class="detail-row">
+                    <label class="detail-label">Product ID:</label>
+                    <span class="detail-value">{{ product.product_id }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Product Name:</label>
+                    <span class="detail-value">{{ product.product_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Category:</label>
+                    <span class="detail-value">{{ product.category.category_name|default:"N/A" }}</span>
+                </div>
+                {% if product.category.description %}
+                <div class="detail-row">
+                    <label class="detail-label">Category Description:</label>
+                    <span class="detail-value">{{ product.category.description }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Pricing Information -->
+            <div class="detail-section">
+                <h3 class="section-title">Pricing & Quantity</h3>
+                <div class="detail-row">
+                    <label class="detail-label">Unit Price:</label>
+                    <span class="detail-value price-value">
+                        {% if product.unit_price %}
+                            ${{ product.unit_price|floatformat:2 }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Quantity per Unit:</label>
+                    <span class="detail-value">{{ product.quantity_per_unit|default:"N/A" }}</span>
+                </div>
+            </div>
+            
+            <!-- Inventory Information -->
+            <div class="detail-section">
+                <h3 class="section-title">Inventory Status</h3>
+                <div class="detail-row">
+                    <label class="detail-label">Units in Stock:</label>
+                    <span class="detail-value {% if product.units_in_stock == 0 %}out-of-stock{% elif product.units_in_stock and product.units_in_stock <= product.reorder_level %}low-stock{% endif %}">
+                        {{ product.units_in_stock|default:"N/A" }}
+                        {% if product.units_in_stock == 0 %}
+                            <span class="stock-indicator">OUT OF STOCK</span>
+                        {% elif product.units_in_stock and product.reorder_level and product.units_in_stock <= product.reorder_level %}
+                            <span class="stock-indicator">LOW STOCK</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Units on Order:</label>
+                    <span class="detail-value">{{ product.units_on_order|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Reorder Level:</label>
+                    <span class="detail-value">{{ product.reorder_level|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Status:</label>
+                    <span class="detail-value">
+                        {% if product.is_discontinued %}
+                            <span class="status-discontinued">Discontinued</span>
+                        {% else %}
+                            <span class="status-active">Active</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="{% url 'myapp:product_list' %}" class="btn btn-secondary">Back to Products</a>
+        </div>
+    </div>
+    
+</div>
+{% endblock %}

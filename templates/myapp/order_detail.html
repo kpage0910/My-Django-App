@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/order_detail.css' %}">
+
+<div class="order-detail-container">
+    
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">Order Details</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{% url 'myapp:home' %}">Home</a> > 
+            <a href="{% url 'myapp:customer_list_class' %}">Customers</a> > 
+            <a href="{% url 'myapp:customer_detail' order.customer.customer_id %}">{{ order.customer.company_name }}</a> > 
+            Order #{{ order.order_id }}
+        </nav>
+    </div>
+    
+    <!-- Order Information Card -->
+    <div class="order-card">
+        
+        <!-- Order Header -->
+        <div class="order-header">
+            <h2 class="order-number">Order #{{ order.order_id }}</h2>
+            <div class="order-status">
+                {% if order.shipped_date %}
+                    <span class="status-shipped">Shipped</span>
+                {% else %}
+                    <span class="status-pending">Pending</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Order Details Grid -->
+        <div class="order-details-grid">
+            
+            <!-- Customer Information -->
+            <div class="detail-section">
+                <h3 class="section-title">Customer Information</h3>
+                <div class="detail-row">
+                    <label class="detail-label">Company:</label>
+                    <span class="detail-value">
+                        <a href="{% url 'myapp:customer_detail' order.customer.customer_id %}" 
+                           class="customer-link">{{ order.customer.company_name }}</a>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Contact:</label>
+                    <span class="detail-value">{{ order.customer.contact_name|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Customer ID:</label>
+                    <span class="detail-value">{{ order.customer.customer_id }}</span>
+                </div>
+            </div>
+            
+            <!-- Order Dates -->
+            <div class="detail-section">
+                <h3 class="section-title">Order Dates</h3>
+                <div class="detail-row">
+                    <label class="detail-label">Order Date:</label>
+                    <span class="detail-value">{{ order.order_date|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Required Date:</label>
+                    <span class="detail-value">{{ order.required_date|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Shipped Date:</label>
+                    <span class="detail-value">
+                        {% if order.shipped_date %}
+                            {{ order.shipped_date }}
+                        {% else %}
+                            <span class="not-shipped">Not Shipped</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Shipping Information -->
+            <div class="detail-section">
+                <h3 class="section-title">Shipping Information</h3>
+                <div class="detail-row">
+                    <label class="detail-label">Ship Name:</label>
+                    <span class="detail-value">{{ order.ship_name|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Ship Address:</label>
+                    <span class="detail-value">{{ order.ship_address|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Ship City:</label>
+                    <span class="detail-value">{{ order.ship_city|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Ship Country:</label>
+                    <span class="detail-value">{{ order.ship_country|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Freight:</label>
+                    <span class="detail-value freight-value">
+                        {% if order.freight %}
+                            ${{ order.freight|floatformat:2 }}
+                        {% else %}
+                            $0.00
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order Items Section -->
+    <div class="order-items-section">
+        <div class="section-header">
+            <h2 class="section-title">Order Items</h2>
+            <div class="items-count-badge">{{ total_items }} item{{ total_items|pluralize }}</div>
+        </div>
+        
+        {% if order_details %}
+            <div class="order-items-table-container">
+                <table class="order-items-table">
+                    <thead class="table-header">
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Unit Price</th>
+                            <th>Quantity</th>
+                            <th>Discount</th>
+                            <th>Line Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detail in order_details %}
+                        <tr class="table-row">
+                            <td class="table-cell product-name">
+                                <a href="{% url 'myapp:product_detail' detail.product_id %}" 
+                                   class="product-link">{{ detail.product_name }}</a>
+                                {% if detail.is_discontinued %}
+                                    <span class="discontinued-badge">DISCONTINUED</span>
+                                {% endif %}
+                            </td>
+                            <td class="table-cell">{{ detail.category_name }}</td>
+                            <td class="table-cell price-cell">${{ detail.unit_price|floatformat:2 }}</td>
+                            <td class="table-cell quantity-cell">{{ detail.quantity }}</td>
+                            <td class="table-cell discount-cell">
+                                {% if detail.discount_percentage > 0 %}
+                                    {{ detail.discount_percentage }}%
+                                {% else %}
+                                    None
+                                {% endif %}
+                            </td>
+                            <td class="table-cell total-cell">
+                                ${{ detail.line_total|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <div class="summary-row">
+                    <label class="summary-label">Subtotal:</label>
+                    <span class="summary-value">${{ subtotal|floatformat:2 }}</span>
+                </div>
+                <div class="summary-row">
+                    <label class="summary-label">Freight:</label>
+                    <span class="summary-value">${{ order.freight|default:0|floatformat:2 }}</span>
+                </div>
+                <div class="summary-row total-row">
+                    <label class="summary-label">Total:</label>
+                    <span class="summary-value">${{ total|floatformat:2 }}</span>
+                </div>
+            </div>
+            
+        {% else %}
+            <div class="no-items">
+                <p>No items found for this order.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'myapp:customer_detail' order.customer.customer_id %}" class="btn btn-secondary">Back to Customer</a>
+        <a href="{% url 'myapp:customer_list_class' %}" class="btn btn-secondary">Back to Customers</a>
+    </div>
+    
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/product_list.css' %}">
+
+<div class="product-container">
+    
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">Product Management</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{% url 'myapp:home' %}">Home</a> > Product Management
+        </nav>
+    </div>
+    
+    <!-- Search Section -->
+    <div class="search-section">
+        <form method="GET" class="search-form">
+            <input type="text" name="product_name" placeholder="Product Name" 
+                   value="{{ product_name_filter }}" class="search-input">
+            
+            <select name="category" class="search-select">
+                <option value="">All Categories</option>
+                {% for category in categories %}
+                    <option value="{{ category.category_id }}" 
+                            {% if category_filter == category.category_id|stringformat:"s" %}selected{% endif %}>
+                        {{ category.category_name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <select name="supplier" class="search-select">
+                <option value="">All Suppliers</option>
+                {% for supplier in suppliers %}
+                    <option value="{{ supplier.supplier_id }}" 
+                            {% if supplier_filter == supplier.supplier_id|stringformat:"s" %}selected{% endif %}>
+                        {{ supplier.company_name }}
+                    </option>
+                {% endfor %}
+            </select>
+            
+            <select name="discontinued" class="search-select">
+                <option value="">All Products</option>
+                <option value="false" {% if discontinued_filter == 'false' %}selected{% endif %}>Active Only</option>
+                <option value="true" {% if discontinued_filter == 'true' %}selected{% endif %}>Discontinued Only</option>
+            </select>
+            
+            <button type="submit" class="search-button">Search</button>
+            <a href="{% url 'myapp:product_list' %}" class="clear-button">Clear</a>
+        </form>
+    </div>
+    
+    <!-- Results Table -->
+    <table class="product-table">
+        <thead class="table-header">
+            <tr>
+                <th>#</th>
+                <th><a href="?sort=product_name{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Product Name</a></th>
+                <th><a href="?sort=category{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Category</a></th>
+                <th><a href="?sort=supplier{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if supplier_filter %}&supplier={{ supplier_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Supplier</a></th>
+                <th><a href="?sort=unit_price{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Unit Price</a></th>
+                <th><a href="?sort=units_in_stock{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Stock</a></th>
+                <th><a href="?sort=discontinued{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Status</a></th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr class="table-row {% if product.is_discontinued %}discontinued-row{% endif %}">
+                <td class="table-cell">{{ start_index|add:forloop.counter }}</td>
+                <td class="table-cell">
+                    {{ product.product_name }}
+                    {% if product.is_discontinued %}<span class="discontinued-badge">DISCONTINUED</span>{% endif %}
+                </td>
+                <td class="table-cell">{{ product.category.category_name|default:"N/A" }}</td>
+                <td class="table-cell">{{ product.supplier.company_name|default:"N/A" }}</td>
+                <td class="table-cell">
+                    {% if product.unit_price %}
+                        ${{ product.unit_price|floatformat:2 }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td class="table-cell">{{ product.units_in_stock|default:"N/A" }}</td>
+                <td class="table-cell">
+                    {% if product.is_discontinued %}
+                        <span class="status-discontinued">Discontinued</span>
+                    {% else %}
+                        <span class="status-active">Active</span>
+                    {% endif %}
+                </td>
+                <td class="table-cell">
+                    <a href="{% url 'myapp:product_detail' product.product_id %}" 
+                       class="detail-link">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="no-results">
+                    No products found. Try adjusting your search criteria.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Results Info -->
+    <div class="results-info">
+        Showing {{ products|length }} products
+        {% if discontinued_filter == 'true' %} (discontinued only){% endif %}
+        {% if discontinued_filter == 'false' %} (active only){% endif %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="pagination-section">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+               class="pagination-link">Previous</a>
+        {% endif %}
+        
+        <span class="pagination-info">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+               class="pagination-link">Next</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+</div>
+{% endblock %}

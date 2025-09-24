@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/customer_detail.css' %}">
+
+<div class="customer-detail-container">
+    
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">Customer Details</h1>
+        <nav class="breadcrumb-nav">
+            <a href="{% url 'myapp:home' %}">Home</a> > 
+            <a href="{% url 'myapp:customer_list_class' %}">Customers</a> > 
+            {{ customer.company_name }}
+        </nav>
+    </div>
+    
+    <!-- Customer Information Card -->
+    <div class="customer-card">
+        
+        <!-- Customer Header -->
+        <div class="customer-header">
+            <h2 class="customer-name">{{ customer.company_name }}</h2>
+            <div class="customer-id">ID: {{ customer.customer_id }}</div>
+        </div>
+        
+        <!-- Customer Details Grid -->
+        <div class="customer-details-grid">
+            
+            <!-- Contact Information -->
+            <div class="detail-section">
+                <h3 class="section-title">Contact Information</h3>
+                <div class="detail-row">
+                    <label class="detail-label">Company Name:</label>
+                    <span class="detail-value">{{ customer.company_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Contact Name:</label>
+                    <span class="detail-value">{{ customer.contact_name|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Contact Title:</label>
+                    <span class="detail-value">{{ customer.contact_title|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Phone:</label>
+                    <span class="detail-value">{{ customer.phone|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Fax:</label>
+                    <span class="detail-value">{{ customer.fax|default:"N/A" }}</span>
+                </div>
+            </div>
+            
+            <!-- Address Information -->
+            <div class="detail-section">
+                <h3 class="section-title">Address Information</h3>
+                <div class="detail-row">
+                    <label class="detail-label">Address:</label>
+                    <span class="detail-value">{{ customer.address|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">City:</label>
+                    <span class="detail-value">{{ customer.city|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Region:</label>
+                    <span class="detail-value">{{ customer.region|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Postal Code:</label>
+                    <span class="detail-value">{{ customer.postal_code|default:"N/A" }}</span>
+                </div>
+                <div class="detail-row">
+                    <label class="detail-label">Country:</label>
+                    <span class="detail-value">{{ customer.country|default:"N/A" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Orders Section -->
+    <div class="orders-section">
+        <div class="section-header">
+            <h2 class="section-title">Order History</h2>
+            <div class="order-count-badge">{{ order_count }} order{{ order_count|pluralize }}</div>
+        </div>
+        
+        {% if orders %}
+            <div class="orders-table-container">
+                <table class="orders-table">
+                    <thead class="table-header">
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Order Date</th>
+                            <th>Required Date</th>
+                            <th>Shipped Date</th>
+                            <th>Ship Name</th>
+                            <th>Ship City</th>
+                            <th>Freight</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr class="table-row">
+                            <td class="table-cell order-id">#{{ order.order_id }}</td>
+                            <td class="table-cell">{{ order.order_date|default:"N/A" }}</td>
+                            <td class="table-cell">{{ order.required_date|default:"N/A" }}</td>
+                            <td class="table-cell">
+                                {% if order.shipped_date %}
+                                    {{ order.shipped_date }}
+                                {% else %}
+                                    <span class="not-shipped">Not Shipped</span>
+                                {% endif %}
+                            </td>
+                            <td class="table-cell">{{ order.ship_name|default:"N/A" }}</td>
+                            <td class="table-cell">{{ order.ship_city|default:"N/A" }}</td>
+                            <td class="table-cell">
+                                {% if order.freight %}
+                                    ${{ order.freight|floatformat:2 }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="table-cell">
+                                {% if order.shipped_date %}
+                                    <span class="status-shipped">Shipped</span>
+                                {% else %}
+                                    <span class="status-pending">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="table-cell">
+                                <a href="{% url 'myapp:order_detail' order.order_id %}" 
+                                   class="detail-link">View Order</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="no-orders">
+                <p>This customer has not placed any orders yet.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'myapp:customer_list_class' %}" class="btn btn-secondary">Back to Customers</a>
+    </div>
+    
+</div>
+{% endblock %}
