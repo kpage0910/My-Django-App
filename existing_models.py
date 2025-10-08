@@ -51,6 +51,7 @@ class Customers(models.Model):
     phone = models.CharField(max_length=24, blank=True, null=True)
     fax = models.CharField(max_length=24, blank=True, null=True)
     password = models.CharField(db_column='Password', max_length=64, blank=True, null=True)  # Field name made lowercase.
+    inactive_date = models.DateField(blank=True, null=True)
 
     class Meta:
         managed = False
@@ -106,7 +107,7 @@ class OrderDetails(models.Model):
 
 
 class Orders(models.Model):
-    order_id = models.SmallIntegerField(primary_key=True)
+    order_id = models.SmallAutoField(primary_key=True)
     customer = models.ForeignKey(Customers, models.DO_NOTHING, blank=True, null=True)
     employee = models.ForeignKey(Employees, models.DO_NOTHING, blank=True, null=True)
     order_date = models.DateField(blank=True, null=True)
@@ -137,6 +138,7 @@ class Products(models.Model):
     units_on_order = models.SmallIntegerField(blank=True, null=True)
     reorder_level = models.SmallIntegerField(blank=True, null=True)
     discontinued = models.IntegerField()
+    date_discontinued = models.DateField(blank=True, null=True)
 
     class Meta:
         managed = False

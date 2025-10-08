@@ -137,18 +137,18 @@
                         {% for detail in order_details %}
                         <tr class="table-row">
                             <td class="table-cell product-name">
-                                <a href="{% url 'myapp:product_detail' detail.product_id %}" 
-                                   class="product-link">{{ detail.product_name }}</a>
-                                {% if detail.is_discontinued %}
+                                <a href="{% url 'myapp:product_detail' detail.product.product_id %}" 
+                                class="product-link">{{ detail.product.product_name }}</a>
+                                    {% if detail.product.is_discontinued %}
                                     <span class="discontinued-badge">DISCONTINUED</span>
                                 {% endif %}
                             </td>
-                            <td class="table-cell">{{ detail.category_name }}</td>
+                            <td class="table-cell">{{ detail.product.category.category_name|default:"N/A" }}</td>
                             <td class="table-cell price-cell">${{ detail.unit_price|floatformat:2 }}</td>
                             <td class="table-cell quantity-cell">{{ detail.quantity }}</td>
                             <td class="table-cell discount-cell">
-                                {% if detail.discount_percentage > 0 %}
-                                    {{ detail.discount_percentage }}%
+                                {% if detail.discount > 0 %}
+                                    {% widthratio detail.discount 1 100 %}%
                                 {% else %}
                                     None
                                 {% endif %}

@@ -1,11 +1,13 @@
 # Import Django functionality we need
 from lib2to3.fixes.fix_input import context
-from django.shortcuts import render  # For rendering templates with context data
-from django.db import connection
-from django.views.generic import ListView, DetailView  # Pre-built Django view classes
+from django.shortcuts import render, redirect  # For rendering templates with context data
+from django.views.generic import ListView, DetailView, CreateView, UpdateView  # Pre-built Django view classes
 from django.db.models import Q  # For complex database queries with OR conditions
+from django.urls import reverse_lazy
+from django.contrib import messages
 from datetime import datetime  # Python's date/time functionality
 from .models import Customers, Products, Categories, Orders, OrderDetails, Suppliers  # Import our Customer model from models.py
+from .forms import CustomerForm
 
 def home(request):
     """
@@ -328,10 +330,6 @@ class ProductDetailView(DetailView):
         return context
     
 class OrderDetailView(DetailView):
-    """
-    OrderDetailView using raw SQL to bypass Django ORM composite key limitations
-    """
-    
     model = Orders
     template_name = 'myapp/order_detail.html'
     context_object_name = 'order'
@@ -343,53 +341,67 @@ class OrderDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['title'] = f'Order Details: #{self.object.order_id}'
         
-        # Use raw SQL to get order details and avoid Django ORM primary key issues
-        order_details = []
+        # Standard Django ORM approach
+        order_details = OrderDetails.objects.filter(
+            order=self.object
+        ).select_related('product', 'product__category')
+        
+        context['order_details'] = order_details
+        
+        # Calculate order totals
         subtotal = 0
         total_items = 0
         
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT 
-                    od.order_id,
-                    od.product_id,
-                    od.unit_price,
-                    od.quantity,
-                    od.discount,
-                    p.product_name,
-                    p.discontinued,
-                    c.category_name
-                FROM order_details od
-                JOIN products p ON od.product_id = p.product_id
-                LEFT JOIN categories c ON p.category_id = c.category_id
-                WHERE od.order_id = %s
-                ORDER BY p.product_name
-            """, [self.object.order_id])
-            
-            for row in cursor.fetchall():
-                order_id, product_id, unit_price, quantity, discount, product_name, discontinued, category_name = row
-                
-                # Create a simple data object to hold the order detail information
-                class OrderDetailData:
-                    def __init__(self):
-                        self.product_id = product_id
-                        self.unit_price = unit_price
-                        self.quantity = quantity
-                        self.discount = discount
-                        self.product_name = product_name
-                        self.is_discontinued = discontinued == 1
-                        self.category_name = category_name or "N/A"
-                        self.line_total = unit_price * quantity * (1 - discount)
-                        self.discount_percentage = int(discount * 100) if discount > 0 else 0
-                
-                detail = OrderDetailData()
-                order_details.append(detail)
-                subtotal += detail.line_total
-                total_items += quantity
+        for detail in order_details:
+            subtotal += detail.line_total
+            total_items += detail.quantity
         
-        context['order_details'] = order_details
         context['subtotal'] = subtotal
         context['total_items'] = total_items
         context['total'] = subtotal + (self.object.freight or 0)
         
+        return context
+
+# Customer CRUD Views for Requirement 1
+
+class CustomerCreateView(CreateView):
+    """
+    Class-based view for creating new customers
+    """
+    model = Customers
+    form_class = CustomerForm
+    template_name = 'myapp/customer_form.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('myapp:customer_detail', kwargs={'pk': self.object.pk})
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'Customer "{form.instance.company_name}" has been created successfully!')
+        return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Create New Customer'
+        context['submit_text'] = 'Create Customer'
+        return context
+
+class CustomerUpdateView(UpdateView):
+    """
+    Class-based view for updating existing customers
+    """
+    model = Customers
+    form_class = CustomerForm
+    template_name = 'myapp/customer_form.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('myapp:customer_detail', kwargs={'pk': self.object.pk})
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'Customer "{form.instance.company_name}" has been updated successfully!')
+        return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = f'Edit Customer: {self.object.company_name}'
+        context['submit_text'] = 'Update Customer'
         return context

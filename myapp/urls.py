@@ -5,8 +5,10 @@ app_name = 'myapp'  # Add namespace
 
 urlpatterns = [
     path('', views.home, name='home'),
-    # Customer views
+    # Customer views - specific patterns first, then generic ones
     path('customers/index/', views.CustomerListView.as_view(), name='customer_list_class'),
+    path('customers/create/', views.CustomerCreateView.as_view(), name='customer_create'),
+    path('customers/<str:pk>/edit/', views.CustomerUpdateView.as_view(), name='customer_edit'),
     path('customers/<str:pk>/', views.CustomerDetailView.as_view(), name='customer_detail'),
 
     # Product views

@@ -1,108 +1,146 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block title %}{{ title }}{% endblock %}
-
-{% block content %}
-<link rel="stylesheet" href="{% static 'css/customer_list.css' %}">
+{% extends 'base.html' %} {% load static %} {% block title %}{{ title }}{%
+endblock %} {% block content %}
+<link rel="stylesheet" href="{% static 'css/customer_list.css' %}" />
 
 <div class="customer-container">
-    
-    <!-- Page Header -->
-    <div class="page-header">
-        <h1 class="page-title">Customer Management</h1>
-        <nav class="breadcrumb-nav">
-            <a href="{% url 'myapp:home' %}">Home</a> > Customer Management
-        </nav>
+  <!-- Page Header -->
+  <div class="page-header">
+    <h1 class="page-title">Customer Management</h1>
+    <div class="header-actions">
+      <a href="{% url 'myapp:customer_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create New Customer
+      </a>
     </div>
-    
-    <!-- Search Section -->
-    <div class="search-section">
-        <form method="GET" class="search-form">
-            <input type="text" name="contact" placeholder="Contact Name" 
-                   value="{{ contact_filter }}" class="search-input">
-            
-            <input type="text" name="contact_title" placeholder="Contact Title" 
-                   value="{{ contact_title_filter }}" class="search-input">
-            
-            <input type="text" name="city" placeholder="City" 
-                   value="{{ city_filter }}" class="search-input">
-            
-            <input type="text" name="country" placeholder="Country" 
-                   value="{{ country_filter }}" class="search-input">
-            
-            <input type="text" name="region" placeholder="Region" 
-                   value="{{ region_filter }}" class="search-input">
-            
-            <button type="submit" class="search-button">Search</button>
-            <a href="{% url 'myapp:customer_list_class' %}" class="clear-button">Clear</a>
-        </form>
-    </div>
-    
-    <!-- Results Table -->
-    <table class="customer-table">
-        <thead class="table-header">
-            <tr>
-                <th>#</th>
-                <th><a href="?sort=company_name">Company</a></th>
-                <th><a href="?sort=contact_name">Contact</a></th>
-                <th><a href="?sort=contact_title">Title</a></th>
-                <th><a href="?sort=address">Address</a></th>
-                <th><a href="?sort=city">City</a></th>
-                <th><a href="?sort=country">Country</a></th>
-                <th><a href="?sort=region">Region</a></th>
-                <th>Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for customer in customers %}
-            <tr class="table-row">
-                <td class="table-cell">{{ start_index|add:forloop.counter }}</td>
-                <td class="table-cell">{{ customer.company_name }}</td>
-                <td class="table-cell">{{ customer.contact_name|default:"N/A" }}</td>
-                <td class="table-cell">{{ customer.contact_title|default:"N/A" }}</td>
-                <td class="table-cell">{{ customer.address|default:"N/A" }}</td>
-                <td class="table-cell">{{ customer.city|default:"N/A" }}</td>
-                <td class="table-cell">{{ customer.country|default:"N/A" }}</td>
-                <td class="table-cell">{{ customer.region|default:"N/A" }}</td> 
-                <td class="table-cell">
-                    <a href="{% url 'myapp:customer_detail' customer.customer_id %}" 
-                       class="detail-link">View</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="9" class="no-results">
-                    No customers found. Try adjusting your search criteria.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    
-    <!-- Results Info -->
-    <div class="results-info">
-        Showing {{ customers|length }} customers
-    </div>
-    
-    <!-- Pagination -->
-    {% if is_paginated %}
-<div class="pagination-section">
+    <nav class="breadcrumb-nav">
+      <a href="{% url 'myapp:home' %}">Home</a> > Customer Management
+    </nav>
+  </div>
+
+  <!-- Search Section -->
+  <div class="search-section">
+    <form method="GET" class="search-form">
+      <input
+        type="text"
+        name="contact"
+        placeholder="Contact Name"
+        value="{{ contact_filter }}"
+        class="search-input"
+      />
+
+      <input
+        type="text"
+        name="contact_title"
+        placeholder="Contact Title"
+        value="{{ contact_title_filter }}"
+        class="search-input"
+      />
+
+      <input
+        type="text"
+        name="city"
+        placeholder="City"
+        value="{{ city_filter }}"
+        class="search-input"
+      />
+
+      <input
+        type="text"
+        name="country"
+        placeholder="Country"
+        value="{{ country_filter }}"
+        class="search-input"
+      />
+
+      <input
+        type="text"
+        name="region"
+        placeholder="Region"
+        value="{{ region_filter }}"
+        class="search-input"
+      />
+
+      <button type="submit" class="search-button">Search</button>
+      <a href="{% url 'myapp:customer_list_class' %}" class="clear-button"
+        >Clear</a
+      >
+    </form>
+  </div>
+
+  <!-- Results Table -->
+  <table class="customer-table">
+    <thead class="table-header">
+      <tr>
+        <th>#</th>
+        <th><a href="?sort=company_name">Company</a></th>
+        <th><a href="?sort=contact_name">Contact</a></th>
+        <th><a href="?sort=contact_title">Title</a></th>
+        <th><a href="?sort=address">Address</a></th>
+        <th><a href="?sort=city">City</a></th>
+        <th><a href="?sort=country">Country</a></th>
+        <th><a href="?sort=region">Region</a></th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for customer in customers %}
+      <tr class="table-row">
+        <td class="table-cell">{{ start_index|add:forloop.counter }}</td>
+        <td class="table-cell">{{ customer.company_name }}</td>
+        <td class="table-cell">{{ customer.contact_name|default:"N/A" }}</td>
+        <td class="table-cell">{{ customer.contact_title|default:"N/A" }}</td>
+        <td class="table-cell">{{ customer.address|default:"N/A" }}</td>
+        <td class="table-cell">{{ customer.city|default:"N/A" }}</td>
+        <td class="table-cell">{{ customer.country|default:"N/A" }}</td>
+        <td class="table-cell">{{ customer.region|default:"N/A" }}</td>
+        <td class="table-cell">
+          <a
+            href="{% url 'myapp:customer_detail' customer.customer_id %}"
+            class="detail-link"
+            >View</a
+          >
+          <a
+            href="{% url 'myapp:customer_edit' customer.customer_id %}"
+            class="edit-link"
+            >Edit</a
+          >
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" class="no-results">
+          No customers found. Try adjusting your search criteria.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Results Info -->
+  <div class="results-info">Showing {{ customers|length }} customers</div>
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+  <div class="pagination-section">
     {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}{% if contact_filter %}&contact={{ contact_filter }}{% endif %}{% if contact_title_filter %}&contact_title={{ contact_title_filter }}{% endif %}{% if city_filter %}&city={{ city_filter }}{% endif %}{% if country_filter %}&country={{ country_filter }}{% endif %}{% if region_filter %}&region={{ region_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
-           class="pagination-link">Previous</a>
+    <a
+      href="?page={{ page_obj.previous_page_number }}{% if contact_filter %}&contact={{ contact_filter }}{% endif %}{% if contact_title_filter %}&contact_title={{ contact_title_filter }}{% endif %}{% if city_filter %}&city={{ city_filter }}{% endif %}{% if country_filter %}&country={{ country_filter }}{% endif %}{% if region_filter %}&region={{ region_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}"
+      class="pagination-link"
+      >Previous</a
+    >
     {% endif %}
-    
+
     <span class="pagination-info">
-        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
     </span>
-    
+
     {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}{% if contact_filter %}&contact={{ contact_filter }}{% endif %}{% if contact_title_filter %}&contact_title={{ contact_title_filter }}{% endif %}{% if city_filter %}&city={{ city_filter }}{% endif %}{% if country_filter %}&country={{ country_filter }}{% endif %}{% if region_filter %}&region={{ region_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
-           class="pagination-link">Next</a>
+    <a
+      href="?page={{ page_obj.next_page_number }}{% if contact_filter %}&contact={{ contact_filter }}{% endif %}{% if contact_title_filter %}&contact_title={{ contact_title_filter }}{% endif %}{% if city_filter %}&city={{ city_filter }}{% endif %}{% if country_filter %}&country={{ country_filter }}{% endif %}{% if region_filter %}&region={{ region_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}"
+      class="pagination-link"
+      >Next</a
+    >
     {% endif %}
-</div>
-{% endif %}
-    
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

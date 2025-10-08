@@ -83,7 +83,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "DjangoTraders",
+        "NAME": "DjangoTradersV2",
         "USER": "postgres",
         "PASSWORD": "tapestry1997",
         "HOST": "localhost",
