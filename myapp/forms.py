@@ -1,6 +1,7 @@
 from django import forms
 from django.core.validators import RegexValidator
-from .models import Customers
+from .models import Customers, Orders, OrderDetails, Employees, Shippers, Products
+from datetime import date, timedelta
 import re
 
 class CustomerForm(forms.ModelForm):
@@ -29,13 +30,11 @@ class CustomerForm(forms.ModelForm):
     def clean_customer_id(self):
         customer_id = self.cleaned_data.get('customer_id')
         if customer_id:
-            # Customer ID should be exactly 5 characters, alphanumeric
             if len(customer_id) != 5:
                 raise forms.ValidationError("Customer ID must be exactly 5 characters long.")
             if not customer_id.isalnum():
                 raise forms.ValidationError("Customer ID must contain only letters and numbers.")
             
-            # Check if customer_id already exists (only for new customers)
             if not self.instance.pk and Customers.objects.filter(customer_id=customer_id).exists():
                 raise forms.ValidationError("A customer with this ID already exists.")
         return customer_id.upper() if customer_id else customer_id
@@ -43,20 +42,16 @@ class CustomerForm(forms.ModelForm):
     def clean_company_name(self):
         company_name = self.cleaned_data.get('company_name')
         if company_name:
-            # Company name should not contain only numbers
             if company_name.isdigit():
                 raise forms.ValidationError("Company name cannot contain only numbers.")
-            # Remove extra whitespace
             company_name = ' '.join(company_name.split())
         return company_name
 
     def clean_contact_name(self):
         contact_name = self.cleaned_data.get('contact_name')
         if contact_name:
-            # Names should not have numbers
             if any(char.isdigit() for char in contact_name):
                 raise forms.ValidationError("Contact name should not contain numbers.")
-            # Check for reasonable name format
             if not re.match(r'^[a-zA-Z\s\-\.\']+$', contact_name):
                 raise forms.ValidationError("Contact name contains invalid characters.")
             contact_name = ' '.join(contact_name.split())
@@ -65,7 +60,6 @@ class CustomerForm(forms.ModelForm):
     def clean_postal_code(self):
         postal_code = self.cleaned_data.get('postal_code')
         if postal_code:
-            # Basic postal code validation - alphanumeric with optional spaces/hyphens
             if not re.match(r'^[a-zA-Z0-9\s\-]+$', postal_code):
                 raise forms.ValidationError("Postal code contains invalid characters.")
         return postal_code
@@ -73,9 +67,6 @@ class CustomerForm(forms.ModelForm):
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone:
-            # Remove common phone number formatting
-            cleaned_phone = re.sub(r'[\s\-\(\)\.]+', '', phone)
-            # Check if remaining characters are digits or common phone symbols
             if not re.match(r'^[\d\+\-\(\)\s\.]+$', phone):
                 raise forms.ValidationError("Phone number contains invalid characters.")
         return phone
@@ -83,7 +74,108 @@ class CustomerForm(forms.ModelForm):
     def clean_fax(self):
         fax = self.cleaned_data.get('fax')
         if fax:
-            # Same validation as phone
             if not re.match(r'^[\d\+\-\(\)\s\.]+$', fax):
                 raise forms.ValidationError("Fax number contains invalid characters.")
         return fax
+
+
+# ======================== ORDER FORMS ========================
+
+class OrderForm(forms.ModelForm):
+    """
+    Form for creating orders with shipping and employee information
+    """
+    class Meta:
+        model = Orders
+        fields = [
+            'employee', 'order_date', 'required_date', 'ship_via',
+            'ship_name', 'ship_address', 'ship_city', 'ship_region',
+            'ship_postal_code', 'ship_country', 'freight'
+        ]
+        widgets = {
+            'employee': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'order_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+                'readonly': True
+            }),
+            'required_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+                'required': True
+            }),
+            'ship_via': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'ship_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'ship_address': forms.TextInput(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'ship_city': forms.TextInput(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'ship_region': forms.TextInput(attrs={
+                'class': 'form-control'
+            }),
+            'ship_postal_code': forms.TextInput(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'ship_country': forms.TextInput(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'freight': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0'
+            })
+        }
+        labels = {
+            'employee': 'Assigned Employee *',
+            'order_date': 'Order Date',
+            'required_date': 'Required Delivery Date *',
+            'ship_via': 'Shipping Method *',
+            'ship_name': 'Ship To Name',
+            'ship_address': 'Shipping Address',
+            'ship_city': 'City',
+            'ship_region': 'State/Region',
+            'ship_postal_code': 'Postal Code',
+            'ship_country': 'Country',
+            'freight': 'Freight Cost'
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Set default values
+        if not self.instance.pk:  # New order
+            self.initial['order_date'] = date.today()
+            self.initial['required_date'] = date.today() + timedelta(days=21)
+            self.initial['freight'] = 0.00
+        
+        # Populate employee choices
+        self.fields['employee'].queryset = Employees.objects.all().order_by('last_name', 'first_name')
+        self.fields['employee'].empty_label = "-- Select an Employee --"
+        
+        # Populate shipper choices
+        self.fields['ship_via'].queryset = Shippers.objects.all().order_by('company_name')
+        self.fields['ship_via'].empty_label = "-- Select Shipping Method --"
+    
+    def clean_required_date(self):
+        required_date = self.cleaned_data.get('required_date')
+        order_date = self.cleaned_data.get('order_date') or date.today()
+        
+        if required_date and required_date < order_date:
+            raise forms.ValidationError("Required date cannot be before order date.")
+        
+        return required_date

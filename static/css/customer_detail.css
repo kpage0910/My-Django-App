@@ -310,3 +310,132 @@
   color: white;
   text-decoration: none;
 }
+
+/* Additional Customer Detail Styles for Order Functionality */
+/* Add these to your existing customer_detail.css file */
+
+/* Place Order Button */
+.btn-success {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+/* Order Badge */
+.badge {
+    background-color: #007bff;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: normal;
+    margin-left: 10px;
+}
+
+/* Order Status Badges */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.status-shipped {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* No Orders Message */
+.no-orders-message {
+    text-align: center;
+    padding: 40px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.no-orders-message p {
+    font-size: 1.1em;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+
+/* Orders Section */
+.orders-section {
+    margin-top: 30px;
+}
+
+.orders-section .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.orders-table-container {
+    overflow-x: auto;
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.orders-table thead {
+    background-color: #f8f9fa;
+}
+
+.orders-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.orders-table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.orders-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.orders-table .btn-link {
+    color: #007bff;
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.orders-table .btn-link:hover {
+    background-color: #e7f3ff;
+    text-decoration: underline;
+}
+
+/* Header Actions Adjustment */
+.header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}

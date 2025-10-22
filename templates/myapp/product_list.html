@@ -3,9 +3,12 @@
 
 {% block title %}{{ title }}{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/product_list.css' %}">
+<link rel="stylesheet" href="{% static 'css/product_list_cart_additions.css' %}">
+{% endblock %}
 
+{% block content %}
 <div class="product-container">
     
     <!-- Page Header -->
@@ -58,13 +61,13 @@
         <thead class="table-header">
             <tr>
                 <th>#</th>
-                <th><a href="?sort=product_name{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Product Name</a></th>
-                <th><a href="?sort=category{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Category</a></th>
-                <th><a href="?sort=supplier{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if supplier_filter %}&supplier={{ supplier_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Supplier</a></th>
-                <th><a href="?sort=unit_price{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Unit Price</a></th>
-                <th><a href="?sort=units_in_stock{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Stock</a></th>
-                <th><a href="?sort=discontinued{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Status</a></th>
-                <th>Details</th>
+                <th><a href="?sort=product_name{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Product Name</a></th>
+                <th><a href="?sort=category{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Category</a></th>
+                <th><a href="?sort=supplier{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if supplier_filter %}&supplier={{ supplier_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Supplier</a></th>
+                <th><a href="?sort=unit_price{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Unit Price</a></th>
+                <th><a href="?sort=units_in_stock{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Stock</a></th>
+                <th><a href="?sort=discontinued{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}">Status</a></th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -94,7 +97,25 @@
                 </td>
                 <td class="table-cell">
                     <a href="{% url 'myapp:product_detail' product.product_id %}" 
-                       class="detail-link">View</a>
+                       class="detail-link" title="View Details">
+                       <i class="bi bi-eye"></i>
+                    </a>
+                    
+                    {% if not product.is_discontinued %}
+                        <form method="post" action="{% url 'myapp:add_to_cart' product.product_id %}" 
+                              class="add-to-cart-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="quantity" value="1">
+                            <input type="hidden" name="next" value="{{ request.path }}?{{ request.GET.urlencode }}">
+                            <button type="submit" class="cart-button" title="Add to Cart">
+                                <i class="bi bi-cart-plus"></i>
+                            </button>
+                        </form>
+                    {% else %}
+                        <button type="button" class="cart-button" disabled title="Product Discontinued">
+                            <i class="bi bi-cart-x"></i>
+                        </button>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}
@@ -118,7 +139,7 @@
     {% if is_paginated %}
     <div class="pagination-section">
         {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+            <a href="?page={{ page_obj.previous_page_number }}{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
                class="pagination-link">Previous</a>
         {% endif %}
         
@@ -127,7 +148,7 @@
         </span>
         
         {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if quantity_per_unit_filter %}&quantity_per_unit={{ quantity_per_unit_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+            <a href="?page={{ page_obj.next_page_number }}{% if product_name_filter %}&product_name={{ product_name_filter }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if discontinued_filter %}&discontinued={{ discontinued_filter }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
                class="pagination-link">Next</a>
         {% endif %}
     </div>

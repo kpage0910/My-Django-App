@@ -48,7 +48,7 @@ class Customers(models.Model):
         return f"{self.company_name} ({self.customer_id})"
 
 class CustomerCustomerDemo(models.Model):
-    customer = models.ForeignKey(Customers, models.DO_NOTHING, primary_key=True)
+    customer = models.OneToOneField(Customers, models.DO_NOTHING, primary_key=True)
     customer_type = models.ForeignKey(CustomerDemographics, models.DO_NOTHING)
 
     class Meta:
@@ -152,7 +152,7 @@ class Territories(models.Model):
         return self.territory_description
 
 class EmployeeTerritories(models.Model):
-    employee = models.ForeignKey(Employees, models.DO_NOTHING, primary_key=True)
+    employee = models.OneToOneField(Employees, models.DO_NOTHING, primary_key=True)
     territory = models.ForeignKey(Territories, models.DO_NOTHING)
 
     class Meta:
@@ -215,7 +215,7 @@ class Orders(models.Model):
         return subtotal + freight
 
 class OrderDetails(models.Model):
-    order = models.ForeignKey(Orders, models.DO_NOTHING, primary_key=True)
+    order = models.OneToOneField(Orders, models.DO_NOTHING, primary_key=True)
     product = models.ForeignKey(Products, models.DO_NOTHING)
     unit_price = models.FloatField()
     quantity = models.SmallIntegerField()

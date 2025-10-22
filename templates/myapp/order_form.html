@@ -1,0 +1,329 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Place Order -
+Django Traders{% endblock %} {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/order_form.css' %}" />
+{% endblock %} {% block content %}
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'myapp:home' %}">Home</a></li>
+    <li class="breadcrumb-item">
+      <a href="{% url 'myapp:cart_view' %}">Shopping Cart</a>
+    </li>
+    <li class="breadcrumb-item active">Place Order</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-lg-8">
+    <h2 class="mb-3"><i class="bi bi-receipt"></i> Place New Order</h2>
+
+    <form method="post" id="orderForm">
+      {% csrf_token %}
+
+      <!-- Customer Selection -->
+      <div class="order-section">
+        <div class="order-section-header">
+          <i class="bi bi-person"></i> Customer Information
+        </div>
+
+        <div class="mb-3">
+          <label for="customer" class="form-label"
+            >Select Customer <span class="text-danger">*</span></label
+          >
+          <select class="form-select" id="customer" name="customer" required>
+            <option value="">-- Select a Customer --</option>
+            {% for cust in customers %}
+            <option
+              value="{{ cust.customer_id }}"
+              data-address="{{ cust.address|default:'' }}"
+              data-city="{{ cust.city|default:'' }}"
+              data-region="{{ cust.region|default:'' }}"
+              data-postal="{{ cust.postal_code|default:'' }}"
+              data-country="{{ cust.country|default:'' }}"
+              data-company="{{ cust.company_name }}"
+            >
+              {{ cust.company_name }} ({{ cust.customer_id }})
+            </option>
+            {% endfor %}
+          </select>
+          <small class="form-text text-muted"
+            >Select the customer placing this order</small
+          >
+        </div>
+      </div>
+
+      <!-- Order Information & Shipping Details -->
+      <div class="order-section">
+        <div class="order-section-header">
+          <i class="bi bi-truck"></i> Order Information & Shipping Details
+        </div>
+
+        <div class="row">
+          <!-- Left Column -->
+          <div class="col-md-6">
+            <!-- Assigned Employee -->
+            <div class="mb-3">
+              {{ form.employee.label_tag }} {{ form.employee }} {% if
+              form.employee.errors %}
+              <div class="text-danger">{{ form.employee.errors }}</div>
+              {% endif %}
+              <small class="form-text text-muted"
+                >Employee helping with this order</small
+              >
+            </div>
+
+            <!-- Required Delivery Date -->
+            <div class="mb-3">
+              {{ form.required_date.label_tag }} {{ form.required_date }} {% if
+              form.required_date.errors %}
+              <div class="text-danger">{{ form.required_date.errors }}</div>
+              {% endif %}
+              <small class="form-text text-muted"
+                >When customer needs the order</small
+              >
+            </div>
+          </div>
+
+          <!-- Right Column -->
+          <div class="col-md-6">
+            <!-- Order Date (readonly) -->
+            <div class="mb-3">
+              {{ form.order_date.label_tag }} {{ form.order_date }}
+              <small class="form-text text-muted"
+                >Today's date (automatic)</small
+              >
+            </div>
+
+            <!-- Shipping Method -->
+            <div class="mb-3">
+              {{ form.ship_via.label_tag }} {{ form.ship_via }} {% if
+              form.ship_via.errors %}
+              <div class="text-danger">{{ form.ship_via.errors }}</div>
+              {% endif %}
+              <small class="form-text text-muted">Shipping company</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Use Customer Address Button -->
+        <div class="mb-3">
+          <button
+            type="button"
+            class="btn btn-outline-primary btn-sm"
+            id="useCustomerAddressBtn"
+          >
+            <i class="bi bi-geo-alt"></i> Use Customer's Address
+          </button>
+        </div>
+
+        <!-- Shipping Address Fields -->
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              {{ form.ship_name.label_tag }} {{ form.ship_name }}
+            </div>
+            <div class="mb-3">
+              {{ form.ship_address.label_tag }} {{ form.ship_address }}
+            </div>
+            <div class="mb-3">
+              {{ form.ship_city.label_tag }} {{ form.ship_city }}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              {{ form.ship_region.label_tag }} {{ form.ship_region }}
+            </div>
+            <div class="mb-3">
+              {{ form.ship_postal_code.label_tag }} {{ form.ship_postal_code }}
+            </div>
+            <div class="mb-3">
+              {{ form.ship_country.label_tag }} {{ form.ship_country }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Items from Cart -->
+      <div class="order-section">
+        <div class="order-section-header">
+          <i class="bi bi-cart"></i> Order Items (From Shopping Cart)
+        </div>
+
+        {% if cart_items %}
+        <div class="table-responsive">
+          <table class="table order-items-table">
+            <thead>
+              <tr>
+                <th style="width: 5%">#</th>
+                <th style="width: 40%">Product</th>
+                <th>Category</th>
+                <th>Unit Price</th>
+                <th style="width: 10%">Quantity</th>
+                <th>Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in cart_items %}
+              <tr>
+                <td class="text-center">
+                  <span class="badge bg-secondary">{{ forloop.counter }}</span>
+                </td>
+                <td>
+                  <strong>{{ item.product.product_name }}</strong>
+                </td>
+                <td>{{ item.product.category.category_name|default:"N/A" }}</td>
+                <td>${{ item.product.unit_price|floatformat:2 }}</td>
+                <td class="text-center">{{ item.quantity }}</td>
+                <td><strong>${{ item.line_total|floatformat:2 }}</strong></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle"></i> Your cart is empty.
+          <a href="{% url 'myapp:product_list' %}">Browse products</a> to add
+          items.
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Order Summary -->
+      <div class="order-section order-summary">
+        <div class="order-section-header success">
+          <i class="bi bi-calculator"></i> Order Summary
+        </div>
+
+        <div class="row">
+          <div class="col-md-8">
+            <p class="mb-1"><strong>Review Details:</strong></p>
+            <ul>
+              <li>Verify customer is correct</li>
+              <li>Ensure employee is assigned</li>
+              <li>Confirm required delivery date</li>
+              <li>Select shipping method</li>
+              <li>Review all order items and quantities</li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <table class="table table-sm mb-0">
+              <tr>
+                <th>Items:</th>
+                <td class="text-end">{{ cart_count }}</td>
+              </tr>
+              <tr>
+                <th>Subtotal:</th>
+                <td class="text-end">${{ cart_total|floatformat:2 }}</td>
+              </tr>
+              <tr>
+                <th>Freight:</th>
+                <td class="text-end">{{ form.freight }}</td>
+              </tr>
+              <tr class="table-active">
+                <th>Total:</th>
+                <th class="text-end fs-5 text-success" id="totalAmount">
+                  ${{ cart_total|floatformat:2 }}
+                </th>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="d-flex justify-content-between mb-5">
+        <a href="{% url 'myapp:cart_view' %}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> Back to Cart
+        </a>
+        {% if cart_items %}
+        <button type="submit" class="btn btn-success btn-lg">
+          <i class="bi bi-check-circle"></i> Confirm and Place Order
+        </button>
+        {% else %}
+        <button type="button" class="btn btn-secondary btn-lg" disabled>
+          <i class="bi bi-x-circle"></i> Cart is Empty
+        </button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Order Requirements Reminder -->
+  <div class="col-lg-4">
+    <div class="card requirements-card">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+          <i class="bi bi-info-circle"></i> Required Information
+        </h5>
+      </div>
+      <div class="card-body">
+        <h6>Before Placing Order:</h6>
+        <ul class="requirements-list">
+          <li><i class="bi bi-check2"></i> Select a customer</li>
+          <li><i class="bi bi-check2"></i> Assign an employee</li>
+          <li><i class="bi bi-check2"></i> Set required date</li>
+          <li><i class="bi bi-check2"></i> Choose shipping method</li>
+          <li><i class="bi bi-check2"></i> Verify cart items</li>
+        </ul>
+
+        <hr />
+
+        <h6>Good to Know:</h6>
+        <ul class="info-list">
+          <li>Discontinued products cannot be ordered</li>
+          <li>Order date is set automatically to today</li>
+          <li>Orders appear on customer detail page</li>
+          <li>New orders show at the top of the list</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block extra_js %}
+<script>
+  // Use customer address button functionality
+  const useCustomerAddressBtn = document.getElementById(
+    "useCustomerAddressBtn"
+  );
+  if (useCustomerAddressBtn) {
+    useCustomerAddressBtn.addEventListener("click", function () {
+      const customerSelect = document.getElementById("customer");
+      const selectedOption =
+        customerSelect.options[customerSelect.selectedIndex];
+      if (selectedOption.value) {
+        document.getElementById("{{ form.ship_name.id_for_label }}").value =
+          selectedOption.dataset.company;
+        document.getElementById("{{ form.ship_address.id_for_label }}").value =
+          selectedOption.dataset.address;
+        document.getElementById("{{ form.ship_city.id_for_label }}").value =
+          selectedOption.dataset.city;
+        document.getElementById("{{ form.ship_region.id_for_label }}").value =
+          selectedOption.dataset.region;
+        document.getElementById(
+          "{{ form.ship_postal_code.id_for_label }}"
+        ).value = selectedOption.dataset.postal;
+        document.getElementById("{{ form.ship_country.id_for_label }}").value =
+          selectedOption.dataset.country;
+      } else {
+        alert("Please select a customer first.");
+      }
+    });
+  }
+
+  // Update total when freight changes
+  const freightInput = document.getElementById(
+    "{{ form.freight.id_for_label }}"
+  );
+  if (freightInput) {
+    freightInput.addEventListener("input", function () {
+      const freight = parseFloat(this.value) || 0;
+      const subtotal = parseFloat("{{ cart_total|default:0 }}");
+      const total = subtotal + freight;
+      document.getElementById("totalAmount").textContent =
+        "$" + total.toFixed(2);
+    });
+  }
+</script>
+{% endblock %}

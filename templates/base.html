@@ -4,9 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Django Traders{% endblock %}</title>
+    <title>{% block title %}Django Traders 2.0{% endblock %}</title>
     
-    <!-- CSS -->
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
     <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
     {% block extra_css %}{% endblock %}
     
@@ -15,36 +20,102 @@
 </head>
 <body>
     <!-- Header/Navigation -->
-    <header>
-      <h1>Django Traders</h1>
-        <nav>
-            <ul>
-                <li><a href="{% url 'myapp:home' %}">Home</a></li>
-            </ul>
-        </nav>
+    <header class="navbar navbar-expand-lg navbar-light bg-light border-bottom">
+        <div class="container-fluid">
+            <!-- Logo and Title -->
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'myapp:home' %}">
+                <i class="bi bi-shop fs-3 me-2"></i>
+                <div>
+                    <strong>Django Traders 2.0</strong>
+                    <br>
+                    <small class="text-muted">{% now "l F j, Y" %}</small>
+                </div>
+            </a>
+
+            <!-- Navbar Toggle for Mobile -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navigation Links -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <!-- Home -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'myapp:home' %}">
+                            <i class="bi bi-house-door"></i> Home
+                        </a>
+                    </li>
+
+                    <!-- Customers -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'myapp:customer_list' %}">
+                            <i class="bi bi-people"></i> Customers
+                        </a>
+                    </li>
+
+                    <!-- Products -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'myapp:product_list' %}">
+                            <i class="bi bi-box-seam"></i> Products
+                        </a>
+                    </li>
+
+                    <!-- Shopping Cart -->
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{% url 'myapp:cart_view' %}">
+                            <i class="bi bi-cart fs-5"></i> Cart
+                            {% if cart_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ cart_count }}
+                            </span>
+                            {% endif %}
+                        </a>
+                    </li>
+
+                    <!-- Place Order -->
+                    {% if cart_count > 0 %}
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-success text-white" href="{% url 'myapp:place_order' %}">
+                            <i class="bi bi-check-circle"></i> Place Order
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
     </header>
 
     <!-- Messages (for Django messages framework) -->
     {% if messages %}
-        <div class="messages">
+        <div class="container mt-3">
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
             {% endfor %}
         </div>
     {% endif %}
 
     <!-- Main content area -->
-    <main>
+    <main class="container my-4">
         {% block content %}
         {% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer>
-        <p>&copy; 2025 Django Traders. All rights reserved.</p>
+    <footer class="bg-light text-center text-muted py-3 mt-5">
+        <div class="container">
+            <p class="mb-0">{% now "l F j, Y" %}</p>
+            <p class="mb-0">&copy; Fall 2025 Kennedy Page</p>
+        </div>
     </footer>
 
-    <!-- JavaScript -->
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
     {% block extra_js %}{% endblock %}
 </body>
 </html>
