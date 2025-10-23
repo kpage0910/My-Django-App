@@ -1,7 +1,13 @@
-{% extends 'base.html' %} {% load static %} {% block title %}Place Order -
-Django Traders{% endblock %} {% block extra_css %}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Place Order - Django Traders{% endblock %}
+
+{% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/order_form.css' %}" />
-{% endblock %} {% block content %}
+{% endblock %}
+
+{% block content %}
 <!-- Breadcrumb -->
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb">
@@ -27,9 +33,7 @@ Django Traders{% endblock %} {% block extra_css %}
         </div>
 
         <div class="mb-3">
-          <label for="customer" class="form-label"
-            >Select Customer <span class="text-danger">*</span></label
-          >
+          <label for="customer" class="form-label">Select Customer <span class="text-danger">*</span></label>
           <select class="form-select" id="customer" name="customer" required>
             <option value="">-- Select a Customer --</option>
             {% for cust in customers %}
@@ -46,9 +50,7 @@ Django Traders{% endblock %} {% block extra_css %}
             </option>
             {% endfor %}
           </select>
-          <small class="form-text text-muted"
-            >Select the customer placing this order</small
-          >
+          <small class="form-text text-muted">Select the customer placing this order</small>
         </div>
       </div>
 
@@ -63,24 +65,20 @@ Django Traders{% endblock %} {% block extra_css %}
           <div class="col-md-6">
             <!-- Assigned Employee -->
             <div class="mb-3">
-              {{ form.employee.label_tag }} {{ form.employee }} {% if
-              form.employee.errors %}
+              {{ form.employee.label_tag }} {{ form.employee }}
+              {% if form.employee.errors %}
               <div class="text-danger">{{ form.employee.errors }}</div>
               {% endif %}
-              <small class="form-text text-muted"
-                >Employee helping with this order</small
-              >
+              <small class="form-text text-muted">Employee helping with this order</small>
             </div>
 
             <!-- Required Delivery Date -->
             <div class="mb-3">
-              {{ form.required_date.label_tag }} {{ form.required_date }} {% if
-              form.required_date.errors %}
+              {{ form.required_date.label_tag }} {{ form.required_date }}
+              {% if form.required_date.errors %}
               <div class="text-danger">{{ form.required_date.errors }}</div>
               {% endif %}
-              <small class="form-text text-muted"
-                >When customer needs the order</small
-              >
+              <small class="form-text text-muted">When customer needs the order</small>
             </div>
           </div>
 
@@ -89,15 +87,13 @@ Django Traders{% endblock %} {% block extra_css %}
             <!-- Order Date (readonly) -->
             <div class="mb-3">
               {{ form.order_date.label_tag }} {{ form.order_date }}
-              <small class="form-text text-muted"
-                >Today's date (automatic)</small
-              >
+              <small class="form-text text-muted">Today's date (automatic)</small>
             </div>
 
             <!-- Shipping Method -->
             <div class="mb-3">
-              {{ form.ship_via.label_tag }} {{ form.ship_via }} {% if
-              form.ship_via.errors %}
+              {{ form.ship_via.label_tag }} {{ form.ship_via }}
+              {% if form.ship_via.errors %}
               <div class="text-danger">{{ form.ship_via.errors }}</div>
               {% endif %}
               <small class="form-text text-muted">Shipping company</small>
@@ -281,7 +277,9 @@ Django Traders{% endblock %} {% block extra_css %}
   </div>
 </div>
 
-{% endblock %} {% block extra_js %}
+{% endblock %}
+
+{% block extra_js %}
 <script>
   // Use customer address button functionality
   const useCustomerAddressBtn = document.getElementById(

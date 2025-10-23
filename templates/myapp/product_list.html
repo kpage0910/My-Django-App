@@ -13,10 +13,17 @@
     
     <!-- Page Header -->
     <div class="page-header">
-        <h1 class="page-title">Product Management</h1>
-        <nav class="breadcrumb-nav">
-            <a href="{% url 'myapp:home' %}">Home</a> > Product Management
-        </nav>
+        <div>
+            <h1 class="page-title">Product Management</h1>
+            <nav class="breadcrumb-nav">
+                <a href="{% url 'myapp:home' %}">Home</a> > Product Management
+            </nav>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'myapp:product_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create New Product
+            </a>
+        </div>
     </div>
     
     <!-- Search Section -->
@@ -99,6 +106,11 @@
                     <a href="{% url 'myapp:product_detail' product.product_id %}" 
                        class="detail-link" title="View Details">
                        <i class="bi bi-eye"></i>
+                    </a>
+                    
+                    <a href="{% url 'myapp:product_edit' product.product_id %}" 
+                       class="edit-link" title="Edit Product">
+                       <i class="bi bi-pencil"></i>
                     </a>
                     
                     {% if not product.is_discontinued %}

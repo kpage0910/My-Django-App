@@ -1,6 +1,6 @@
 from django import forms
 from django.core.validators import RegexValidator
-from .models import Customers, Orders, OrderDetails, Employees, Shippers, Products
+from .models import Customers, Orders, OrderDetails, Employees, Shippers, Products, Categories, Suppliers
 from datetime import date, timedelta
 import re
 
@@ -179,3 +179,198 @@ class OrderForm(forms.ModelForm):
             raise forms.ValidationError("Required date cannot be before order date.")
         
         return required_date
+    
+# ======================== PRODUCT FORMS ========================
+
+class ProductForm(forms.ModelForm):
+    """
+    Form for creating and editing products with comprehensive validation
+    """
+    class Meta:
+        model = Products
+        fields = [
+            'product_name', 'supplier', 'category', 'quantity_per_unit',
+            'unit_price', 'units_in_stock', 'units_on_order', 
+            'reorder_level', 'discontinued'
+        ]
+        widgets = {
+            'product_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'required': True,
+                'maxlength': '40'
+            }),
+            'supplier': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'category': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'quantity_per_unit': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': '20',
+                'placeholder': 'e.g., 10 boxes x 20 bags'
+            }),
+            'unit_price': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0'
+            }),
+            'units_in_stock': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'units_on_order': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'reorder_level': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0'
+            }),
+            'discontinued': forms.Select(
+                choices=[(0, 'Active'), (1, 'Discontinued')],
+                attrs={'class': 'form-select'}
+            )
+        }
+        labels = {
+            'product_name': 'Product Name *',
+            'supplier': 'Supplier',
+            'category': 'Category',
+            'quantity_per_unit': 'Quantity Per Unit',
+            'unit_price': 'Unit Price ($)',
+            'units_in_stock': 'Units in Stock',
+            'units_on_order': 'Units on Order',
+            'reorder_level': 'Reorder Level',
+            'discontinued': 'Status'
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Set default values for new products
+        if not self.instance.pk:
+            self.initial['discontinued'] = 0
+            self.initial['units_in_stock'] = 0
+            self.initial['units_on_order'] = 0
+            self.initial['reorder_level'] = 0
+            self.initial['unit_price'] = 0.00
+        
+        # Populate category choices
+        self.fields['category'].queryset = Categories.objects.all().order_by('category_name')
+        self.fields['category'].empty_label = "-- Select a Category --"
+        
+        # Populate supplier choices
+        self.fields['supplier'].queryset = Suppliers.objects.all().order_by('company_name')
+        self.fields['supplier'].empty_label = "-- Select a Supplier --"
+    
+    def clean_product_name(self):
+        """Validate product name"""
+        product_name = self.cleaned_data.get('product_name')
+        
+        if product_name:
+            # Remove extra whitespace
+            product_name = ' '.join(product_name.split())
+            
+            # Check if not empty after stripping
+            if not product_name.strip():
+                raise forms.ValidationError("Product name cannot be empty or only whitespace.")
+            
+            # Check if product name contains only numbers
+            if product_name.isdigit():
+                raise forms.ValidationError("Product name cannot contain only numbers.")
+            
+            # Check minimum length
+            if len(product_name) < 2:
+                raise forms.ValidationError("Product name must be at least 2 characters long.")
+            
+            # Check for duplicate product names (case-insensitive)
+            # Allow same name for the product being edited
+            duplicate_check = Products.objects.filter(product_name__iexact=product_name)
+            if self.instance.pk:
+                duplicate_check = duplicate_check.exclude(product_id=self.instance.pk)
+            
+            if duplicate_check.exists():
+                raise forms.ValidationError(f"A product with the name '{product_name}' already exists.")
+        
+        return product_name
+    
+    def clean_unit_price(self):
+        """Validate unit price"""
+        unit_price = self.cleaned_data.get('unit_price')
+        
+        if unit_price is not None:
+            if unit_price < 0:
+                raise forms.ValidationError("Unit price cannot be negative.")
+            
+            if unit_price > 999999.99:
+                raise forms.ValidationError("Unit price cannot exceed $999,999.99.")
+        
+        return unit_price
+    
+    def clean_units_in_stock(self):
+        """Validate units in stock"""
+        units_in_stock = self.cleaned_data.get('units_in_stock')
+        
+        if units_in_stock is not None:
+            if units_in_stock < 0:
+                raise forms.ValidationError("Units in stock cannot be negative.")
+            
+            if units_in_stock > 32767:
+                raise forms.ValidationError("Units in stock cannot exceed 32,767.")
+        
+        return units_in_stock
+    
+    def clean_units_on_order(self):
+        """Validate units on order"""
+        units_on_order = self.cleaned_data.get('units_on_order')
+        
+        if units_on_order is not None:
+            if units_on_order < 0:
+                raise forms.ValidationError("Units on order cannot be negative.")
+            
+            if units_on_order > 32767:
+                raise forms.ValidationError("Units on order cannot exceed 32,767.")
+        
+        return units_on_order
+    
+    def clean_reorder_level(self):
+        """Validate reorder level"""
+        reorder_level = self.cleaned_data.get('reorder_level')
+        
+        if reorder_level is not None:
+            if reorder_level < 0:
+                raise forms.ValidationError("Reorder level cannot be negative.")
+            
+            if reorder_level > 32767:
+                raise forms.ValidationError("Reorder level cannot exceed 32,767.")
+        
+        return reorder_level
+    
+    def clean_quantity_per_unit(self):
+        """Validate quantity per unit"""
+        quantity_per_unit = self.cleaned_data.get('quantity_per_unit')
+        
+        if quantity_per_unit:
+            # Remove extra whitespace
+            quantity_per_unit = ' '.join(quantity_per_unit.split())
+        
+        return quantity_per_unit
+    
+    def clean(self):
+        """Cross-field validation"""
+        cleaned_data = super().clean()
+        
+        units_in_stock = cleaned_data.get('units_in_stock')
+        reorder_level = cleaned_data.get('reorder_level')
+        discontinued = cleaned_data.get('discontinued')
+        
+        # Warning if stock is below reorder level
+        if units_in_stock is not None and reorder_level is not None:
+            if units_in_stock < reorder_level and discontinued == 0:
+                # This is just a warning, not an error
+                self.add_error(None, forms.ValidationError(
+                    f"Warning: Stock level ({units_in_stock}) is below reorder level ({reorder_level}).",
+                    code='low_stock_warning'
+                ))
+        
+        return cleaned_data

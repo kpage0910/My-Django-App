@@ -10,6 +10,10 @@
     border-bottom: 2px solid #eee;
     padding-bottom: 20px;
     margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
 }
 
 .page-title {
@@ -30,6 +34,36 @@
 
 .breadcrumb-nav a:hover {
     text-decoration: underline;
+}
+
+.header-actions {
+    margin-top: 10px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+.btn i {
+    margin-right: 5px;
 }
 
 /* Search Form Styles */
@@ -140,17 +174,30 @@
 
 .table-cell {
     padding: 10px 12px;
-    vertical-align: top;
+    vertical-align: middle;
 }
 
-.detail-link {
+.detail-link,
+.edit-link {
     color: #007bff;
     text-decoration: none;
     font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 3px;
+    margin-right: 5px;
+    display: inline-block;
 }
 
 .detail-link:hover {
-    text-decoration: underline;
+    background: #e7f3ff;
+}
+
+.edit-link {
+    color: #28a745;
+}
+
+.edit-link:hover {
+    background: #d4edda;
 }
 
 /* Status and Badge Styles */
@@ -211,10 +258,7 @@
     margin: 0 20px;
 }
 
-/* Additional Product List Styles for Cart Functionality */
-/* Add these to your existing product_list.css file */
-
-/* Cart Button Styles */
+/* Cart Functionality Styles */
 .cart-button {
     background-color: #28a745;
     color: white;
@@ -224,7 +268,7 @@
     cursor: pointer;
     font-size: 1.1em;
     transition: background-color 0.3s;
-    margin-left: 8px;
+    margin-left: 5px;
 }
 
 .cart-button:hover:not(:disabled) {
@@ -243,21 +287,27 @@
     padding: 0;
 }
 
-.detail-link {
-    color: #007bff;
-    text-decoration: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    transition: background-color 0.3s;
-}
-
-.detail-link:hover {
-    background-color: #e7f3ff;
-}
-
 /* Action cell styling */
 .table-cell .cart-button,
-.table-cell .detail-link {
+.table-cell .detail-link,
+.table-cell .edit-link {
     display: inline-block;
     vertical-align: middle;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+    }
+    
+    .header-actions {
+        width: 100%;
+        margin-top: 15px;
+    }
+    
+    .btn-primary {
+        width: 100%;
+        text-align: center;
+    }
 }

@@ -1,4 +1,4 @@
-# views.py - Simplified for Requirement 2 (NO LOGIN REQUIRED)
+# views.py 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.db.models import Q
@@ -13,7 +13,7 @@ from .models import (
     Customers, Products, Categories, Orders, OrderDetails, 
     Suppliers, Employees, Shippers
 )
-from .forms import CustomerForm, OrderForm
+from .forms import CustomerForm, OrderForm, ProductForm
 from .cart_utils import (
     get_cart, add_to_cart, remove_from_cart, 
     clear_cart, get_cart_items, validate_cart
@@ -245,6 +245,70 @@ class ProductDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = f'Product Details: {self.object.product_name}'
+        
+        # Get customers who have purchased this product
+        from django.db.models import Count, Sum
+        
+        customer_purchases = OrderDetails.objects.filter(
+            product=self.object
+        ).values(
+            'order__customer__customer_id',
+            'order__customer__company_name',
+            'order__customer__contact_name'
+        ).annotate(
+            order_count=Count('order_id', distinct=True),
+            total_quantity=Sum('quantity')
+        ).order_by('-total_quantity')
+        
+        context['customer_purchases'] = customer_purchases
+        
+        return context
+    
+class ProductCreateView(CreateView):
+    """
+    Class-based view for creating new products
+    """
+    model = Products
+    form_class = ProductForm
+    template_name = 'myapp/product_form.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('myapp:product_detail', kwargs={'pk': self.object.pk})
+    
+    def form_valid(self, form):
+        # Automatically assign the next available product_id
+        from django.db import models
+        max_id = Products.objects.aggregate(models.Max('product_id'))['product_id__max'] or 0
+        form.instance.product_id = max_id + 1
+        messages.success(self.request, f'Product "{form.instance.product_name}" has been created successfully!')
+        return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Create New Product'
+        context['submit_text'] = 'Create Product'
+        return context
+
+
+class ProductUpdateView(UpdateView):
+    """
+    Class-based view for updating existing products
+    """
+    model = Products
+    form_class = ProductForm
+    template_name = 'myapp/product_form.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('myapp:product_detail', kwargs={'pk': self.object.pk})
+    
+    def form_valid(self, form):
+        messages.success(self.request, f'Product "{form.instance.product_name}" has been updated successfully!')
+        return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = f'Edit Product: {self.object.product_name}'
+        context['submit_text'] = 'Update Product'
         return context
 
 
@@ -477,3 +541,27 @@ def clear_cart_view(request):
     clear_cart(request)
     messages.success(request, 'Your cart has been cleared.')
     return redirect('myapp:cart_view')
+
+
+def buy_again_view(request, product_id):
+    """
+    Quick "Buy Again" functionality - adds product to cart and redirects to order form
+    """
+    try:
+        product = get_object_or_404(Products, product_id=product_id)
+        
+        # Check if product is discontinued
+        if product.discontinued == 1:
+            messages.error(request, f'{product.product_name} is discontinued and cannot be ordered.')
+            return redirect('myapp:product_detail', pk=product_id)
+        
+        # Add product to cart with quantity 1
+        add_to_cart(request, product_id, 1)
+        messages.success(request, f'{product.product_name} has been added to your cart.')
+        
+        # Redirect to place order page
+        return redirect('myapp:place_order')
+        
+    except Products.DoesNotExist:
+        messages.error(request, 'Product not found.')
+        return redirect('myapp:product_list')

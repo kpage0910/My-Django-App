@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Django Traders{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/product_form.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="form-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h2>{{ title }}</h2>
+      <nav class="breadcrumb-nav">
+        <a href="{% url 'myapp:home' %}">Home</a> >
+        <a href="{% url 'myapp:product_list' %}">Products</a> >
+        {% if object %}
+          <a href="{% url 'myapp:product_detail' object.product_id %}">{{ object.product_name }}</a> >
+          Edit
+        {% else %}
+          Create New Product
+        {% endif %}
+      </nav>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" id="productForm">
+      {% csrf_token %}
+
+      <!-- Basic Information Section -->
+      <div class="form-section">
+        <h4 class="section-header">
+          <i class="bi bi-info-circle"></i> Basic Information
+        </h4>
+
+        <div class="form-row">
+          <!-- Product Name -->
+          <div class="form-group">
+            {{ form.product_name.label_tag }}
+            {{ form.product_name }}
+            {% if form.product_name.errors %}
+              <ul class="error-list">
+                {% for error in form.product_name.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <small class="form-text text-muted">Enter a unique product name (2-40 characters)</small>
+          </div>
+
+          <!-- Status -->
+          <div class="form-group">
+            {{ form.discontinued.label_tag }}
+            {{ form.discontinued }}
+            {% if form.discontinued.errors %}
+              <ul class="error-list">
+                {% for error in form.discontinued.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <small class="form-text text-muted">Product availability status</small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Category -->
+          <div class="form-group">
+            {{ form.category.label_tag }}
+            {{ form.category }}
+            {% if form.category.errors %}
+              <ul class="error-list">
+                {% for error in form.category.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <small class="form-text text-muted">Product category</small>
+          </div>
+
+          <!-- Supplier -->
+          <div class="form-group">
+            {{ form.supplier.label_tag }}
+            {{ form.supplier }}
+            {% if form.supplier.errors %}
+              <ul class="error-list">
+                {% for error in form.supplier.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <small class="form-text text-muted">Product supplier</small>
+          </div>
+        </div>
+
+        <!-- Quantity Per Unit -->
+        <div class="form-group">
+          {{ form.quantity_per_unit.label_tag }}
+          {{ form.quantity_per_unit }}
+          {% if form.quantity_per_unit.errors %}
+            <ul class="error-list">
+              {% for error in form.quantity_per_unit.errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <small class="form-text text-muted">Package description (e.g., "10 boxes x 20 bags")</small>
+        </div>
+      </div>
+
+      <!-- Pricing Information Section -->
+      <div class="form-section">
+        <h4 class="section-header">
+          <i class="bi bi-currency-dollar"></i> Pricing Information
+        </h4>
+
+        <div class="form-row">
+          <!-- Unit Price -->
+          <div class="form-group">
+            {{ form.unit_price.label_tag }}
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              {{ form.unit_price }}
+            </div>
+            {% if form.unit_price.errors %}
+              <ul class="error-list">
+                {% for error in form.unit_price.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <small class="form-text text-muted">Price per unit (0.00 - 999,999.99)</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory Information Section -->
+      <div class="form-section">
+        <h4 class="section-header">
+          <i class="bi bi-box-seam"></i> Inventory Information
+        </h4>
+
+        <div class="form-row-3">
+          <!-- Units in Stock -->
+          <div class="form-group">
+            {{ form.units_in_stock.label_tag }}
+            {{ form.units_in_stock }}
+            {% if form.units_in_stock.errors %}
+              <ul class="error-list">
+                {% for error in form.units_in_stock.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <small class="form-text text-muted">Current stock level</small>
+          </div>
+
+          <!-- Units on Order -->
+          <div class="form-group">
+            {{ form.units_on_order.label_tag }}
+            {{ form.units_on_order }}
+            {% if form.units_on_order.errors %}
+              <ul class="error-list">
+                {% for error in form.units_on_order.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <small class="form-text text-muted">Units on order</small>
+          </div>
+
+          <!-- Reorder Level -->
+          <div class="form-group">
+            {{ form.reorder_level.label_tag }}
+            {{ form.reorder_level }}
+            {% if form.reorder_level.errors %}
+              <ul class="error-list">
+                {% for error in form.reorder_level.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <small class="form-text text-muted">Minimum stock level</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Non-field errors (cross-field validation) -->
+      {% if form.non_field_errors %}
+        <div class="alert alert-warning">
+          {% for error in form.non_field_errors %}
+            <p class="mb-0">{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Form Actions -->
+      <div class="btn-group">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-circle"></i> {{ submit_text|default:"Save Product" }}
+        </button>
+        <a href="{% if object %}{% url 'myapp:product_detail' object.product_id %}{% else %}{% url 'myapp:product_list' %}{% endif %}" class="btn btn-secondary">
+          <i class="bi bi-x-circle"></i> Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Form validation feedback
+  document.querySelector('#productForm').addEventListener('submit', function(e) {
+    const productNameField = document.getElementById('{{ form.product_name.id_for_label }}');
+    
+    // Basic client-side validation
+    if (!productNameField.value.trim()) {
+      e.preventDefault();
+      alert('Product name is required');
+      productNameField.focus();
+      return;
+    }
+  });
+
+  // Real-time stock level warning
+  const stockField = document.getElementById('{{ form.units_in_stock.id_for_label }}');
+  const reorderField = document.getElementById('{{ form.reorder_level.id_for_label }}');
+  
+  function checkStockLevel() {
+    const stock = parseInt(stockField.value) || 0;
+    const reorder = parseInt(reorderField.value) || 0;
+    
+    const warningDiv = document.getElementById('stockWarning');
+    
+    if (stock < reorder && stock >= 0 && reorder > 0) {
+      if (!warningDiv) {
+        const warning = document.createElement('div');
+        warning.id = 'stockWarning';
+        warning.className = 'alert alert-warning mt-2';
+        warning.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Stock level is below reorder level!';
+        reorderField.parentElement.appendChild(warning);
+      }
+    } else {
+      if (warningDiv) {
+        warningDiv.remove();
+      }
+    }
+  }
+  
+  if (stockField && reorderField) {
+    stockField.addEventListener('input', checkStockLevel);
+    reorderField.addEventListener('input', checkStockLevel);
+    // Check on page load
+    checkStockLevel();
+  }
+</script>
+{% endblock %}
