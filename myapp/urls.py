@@ -13,8 +13,8 @@ urlpatterns = [
     # Customer URLs
     path('customers/', views.CustomerListView.as_view(), name='customer_list'),
     path('customers/', views.CustomerListView.as_view(), name='customer_list_class'),  # Alias for compatibility
-    path('customer/<str:pk>/', views.CustomerDetailView.as_view(), name='customer_detail'),
     path('customer/create/', views.CustomerCreateView.as_view(), name='customer_create'),
+    path('customer/<str:pk>/', views.CustomerDetailView.as_view(), name='customer_detail'),
     path('customer/<str:pk>/edit/', views.CustomerUpdateView.as_view(), name='customer_edit'),
     
     # Product URLs

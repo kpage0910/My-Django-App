@@ -1,21 +1,30 @@
-{% extends 'base.html' %}
-{% load static %}
-{% block title %}{{ title }}{% endblock %}
+{% extends 'base.html' %} 
+{% load static %} 
+{% block title %}{{ title }}{%endblock %} 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/customer_list.css' %}" />
 
 <div class="customer-container">
   <!-- Page Header -->
-  <div class="page-header">
-    <h1 class="page-title">Customer Management</h1>
+  <div
+    class="page-header"
+    style="
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    "
+  >
+    <div>
+      <h1 class="page-title">Customer Management</h1>
+      <nav class="breadcrumb-nav">
+        <a href="{% url 'myapp:home' %}">Home</a> &gt; Customer Management
+      </nav>
+    </div>
     <div class="header-actions">
       <a href="{% url 'myapp:customer_create' %}" class="btn btn-primary">
         <i class="fas fa-plus"></i> Create New Customer
       </a>
     </div>
-    <nav class="breadcrumb-nav">
-      <a href="{% url 'myapp:home' %}">Home</a> > Customer Management
-    </nav>
   </div>
 
   <!-- Search Section -->
