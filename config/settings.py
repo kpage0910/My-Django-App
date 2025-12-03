@@ -133,3 +133,20 @@ STATIC_URL = "/static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Authentication settings
+AUTHENTICATION_BACKENDS = [
+    'myapp.auth_backend.CustomerAuthBackend',
+    'myapp.auth_backend.EmployeeAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',  # Keep default for admin
+]
+
+# Login/Logout URLs
+LOGIN_URL = 'myapp:login'
+LOGIN_REDIRECT_URL = 'myapp:home'
+LOGOUT_REDIRECT_URL = 'myapp:home'
+
+# Session settings
+SESSION_COOKIE_AGE = 3600  # 1 hour in seconds (was 24 hours)
+SESSION_SAVE_EVERY_REQUEST = True  # Updates expiration on each request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Session persists until timeout

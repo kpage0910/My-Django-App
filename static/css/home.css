@@ -1,41 +1,222 @@
-*{
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 .home-container {
-    width: 100%;           /* Full width */
-    height: 100%;          /* Full height of main element */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;  /* Centers content vertically */
-    align-items: center;      /* Centers content horizontally */
-    padding: 2rem;
-    text-align: center;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
 }
 
-.hero-section{
-    max-width: 600px;
-    margin: 2rem auto;
-    margin-top: 200px;
-    padding: 2rem;
+.hero-section {
+  max-width: 980px;
+  margin: 4rem auto;
+  padding: 4rem 2rem;
+  background: transparent;
+  text-align: center;
 }
 
-.manage-btn{
-    text-decoration: none;
-    color: white;
-    background-color: black;
-    padding: 1.5rem 3rem;
-    min-height: 60px;
-    min-width: 200px;
-    border-radius: 5px;
-    font-size: 1.2rem;
-    transition: background-color 0.3s ease;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-section h1 {
+  font-size: 80px;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: #1d1d1f;
+  margin-bottom: 0.3em;
+}
+
+.hero-section h2 {
+  font-size: 64px;
+  line-height: 1.0625;
+  font-weight: 600;
+  letter-spacing: -0.009em;
+  color: #1d1d1f;
+  margin-bottom: 0.3em;
+}
+
+.hero-section p {
+  font-size: 32px;
+  line-height: 1.125;
+  font-weight: 400;
+  letter-spacing: 0.007em;
+  color: #6e6e73;
+  margin-bottom: 1.5em;
+}
+
+.manage-btn {
+  text-decoration: none;
+  color: #ffffff !important;
+  background: #0071e3;
+  padding: 12px 22px;
+  min-height: 44px;
+  min-width: 28px;
+  border-radius: 980px;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.022em;
+  transition: background 0.3s ease;
+  display: inline-block;
 }
 
 .manage-btn:hover {
-    background-color: #e0e0e0;
+  background: #0077ed;
+  color: #ffffff !important;
+  opacity: 1 !important;
 }
 
+/* Feature Cards - Clean & Minimal */
+.feature-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-top: 4rem;
+  max-width: 1200px;
+  width: 100%;
+}
+
+.feature-card {
+  background: #f5f5f7;
+  padding: 2.5rem 2rem;
+  border-radius: 18px;
+  transition: transform 0.3s ease;
+  border: none;
+}
+
+.feature-card:hover {
+  transform: scale(1.02);
+}
+
+.feature-card i {
+  font-size: 52px;
+  color: #0071e3;
+  margin-bottom: 0.5rem;
+}
+
+.feature-card h3 {
+  margin-top: 1rem;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #1d1d1f;
+}
+
+.feature-card p {
+  margin-top: 0.5rem;
+  font-size: 17px;
+  line-height: 1.47059;
+  color: #6e6e73;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 1rem;
+    margin: 2rem auto;
+  }
+
+  .hero-section h1 {
+    font-size: 48px;
+  }
+
+  .hero-section h2 {
+    font-size: 40px;
+  }
+
+  .hero-section p {
+    font-size: 24px;
+  }
+
+  .feature-cards {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .home-container {
+    padding: 1rem;
+  }
+
+  .hero-section {
+    padding: 1.5rem 0.5rem;
+    margin: 1rem auto;
+  }
+
+  .hero-section h1 {
+    font-size: 36px;
+    margin-bottom: 0.4em;
+  }
+
+  .hero-section h2 {
+    font-size: 32px;
+  }
+
+  .hero-section p {
+    font-size: 20px;
+    margin-bottom: 1em;
+  }
+
+  .manage-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .feature-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .feature-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .feature-card i {
+    font-size: 42px;
+  }
+
+  .feature-card h3 {
+    font-size: 20px;
+  }
+
+  .feature-card p {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 360px) {
+  .hero-section h1 {
+    font-size: 32px;
+  }
+
+  .hero-section h2 {
+    font-size: 28px;
+  }
+
+  .hero-section p {
+    font-size: 18px;
+  }
+}

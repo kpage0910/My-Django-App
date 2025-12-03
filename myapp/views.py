@@ -1,13 +1,20 @@
 # views.py 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
-from django.db.models import Q
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
+from django.views import View
+from django.db.models import Q, Sum, Count, Avg, F, FloatField, Value, ExpressionWrapper
+from django.db.models.functions import TruncYear, TruncMonth, Coalesce
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.http import JsonResponse
 from datetime import datetime, date, timedelta
 from decimal import Decimal
+import calendar
+import json
 
 from .models import (
     Customers, Products, Categories, Orders, OrderDetails, 
@@ -18,6 +25,34 @@ from .cart_utils import (
     get_cart, add_to_cart, remove_from_cart, 
     clear_cart, get_cart_items, validate_cart
 )
+from .recommendation_utils import get_product_recommendations
+
+# Custom mixin for session-based authentication
+class SessionLoginRequiredMixin:
+    """
+    Mixin that checks for session-based authentication.
+    Redirects to login if user_id is not in session.
+    """
+    def dispatch(self, request, *args, **kwargs):
+        if not request.session.get('user_id'):
+            messages.warning(request, 'Please log in to access this page.')
+            return redirect('myapp:login')
+        return super().dispatch(request, *args, **kwargs)
+
+def convert_to_json_safe(data):
+    """Convert QuerySet data to JSON-safe format"""
+    result = []
+    for item in data:
+        safe_item = {}
+        for key, value in item.items():
+            if isinstance(value, Decimal):
+                safe_item[key] = float(value)
+            elif value is None:
+                safe_item[key] = 0
+            else:
+                safe_item[key] = value
+        result.append(safe_item)
+    return result
 
 def home(request):
     """
@@ -37,7 +72,7 @@ def home(request):
 
 # ====================== CUSTOMER VIEWS ======================
 
-class CustomerListView(ListView):
+class CustomerListView(SessionLoginRequiredMixin, ListView):
     """
     Class-based view for displaying a list of customers
     """
@@ -113,10 +148,10 @@ class CustomerDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['title'] = f'Customer Details: {self.object.company_name}'
         
-        # Add customer's orders to context, sorted by most recent first
+        # Add customer's orders to context, sorted by most recent first (newest at top)
         context['orders'] = Orders.objects.filter(
             customer=self.object
-        ).select_related('ship_via', 'employee').order_by('-order_date')
+        ).select_related('ship_via', 'employee').order_by('-order_id', '-order_date')
         
         return context
 
@@ -133,7 +168,18 @@ class CustomerCreateView(CreateView):
         return reverse_lazy('myapp:customer_detail', kwargs={'pk': self.object.pk})
     
     def form_valid(self, form):
-        messages.success(self.request, f'Customer "{form.instance.company_name}" has been created successfully!')
+        # Auto-generate customer ID
+        import string
+        import random
+        
+        # Generate a unique 5-character alphanumeric customer ID
+        while True:
+            new_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+            if not Customers.objects.filter(customer_id=new_id).exists():
+                form.instance.customer_id = new_id
+                break
+        
+        messages.success(self.request, f'Customer "{form.instance.company_name}" has been created successfully with ID: {new_id}!')
         return super().form_valid(form)
     
     def get_context_data(self, **kwargs):
@@ -167,7 +213,7 @@ class CustomerUpdateView(UpdateView):
 
 # ====================== PRODUCT VIEWS ======================
 
-class ProductListView(ListView):
+class ProductListView(SessionLoginRequiredMixin, ListView):
     """
     Class-based view for displaying a list of products
     """
@@ -444,22 +490,50 @@ class OrderCreateView(CreateView):
                 # Save the order
                 self.object = form.save()
                 
-                # Create order details from cart items
+                # Calculate total items in cart for volume discount
+                total_items = sum(item['quantity'] for item in cart_data['items'])
+                
+                # Determine discount based on order volume
+                # 0% for orders < 10 items
+                # 5% for orders 10-24 items
+                # 10% for orders 25-49 items
+                # 15% for orders 50+ items
+                if total_items >= 50:
+                    base_discount = 0.15
+                elif total_items >= 25:
+                    base_discount = 0.10
+                elif total_items >= 10:
+                    base_discount = 0.05
+                else:
+                    base_discount = 0.00
+                
+                # Create order details from cart items with calculated discount
                 for item in cart_data['items']:
+                    # Apply additional 5% discount if quantity of single product >= 10
+                    item_discount = base_discount
+                    if item['quantity'] >= 10:
+                        item_discount = min(base_discount + 0.05, 0.20)  # Max 20% discount
+                    
                     OrderDetails.objects.create(
                         order=self.object,
                         product=item['product'],
                         unit_price=item['product'].unit_price,
                         quantity=item['quantity'],
-                        discount=0.00  # Default discount
+                        discount=item_discount
                     )
                 
                 # Clear the cart after successful order
                 clear_cart(self.request)
                 
+                # Create success message with discount info
+                if base_discount > 0:
+                    discount_msg = f' A {int(base_discount * 100)}% volume discount has been applied!'
+                else:
+                    discount_msg = ''
+                
                 messages.success(
                     self.request,
-                    f'Order #{self.object.order_id} created successfully for {customer.company_name}!'
+                    f'Order #{self.object.order_id} created successfully for {customer.company_name}!{discount_msg}'
                 )
                 
                 return redirect(self.get_success_url())
@@ -565,3 +639,756 @@ def buy_again_view(request, product_id):
     except Products.DoesNotExist:
         messages.error(request, 'Product not found.')
         return redirect('myapp:product_list')
+
+
+# ====================== AUTHENTICATION VIEWS ======================
+
+class CustomerLoginView(View):
+    """
+    Custom login view for customers and employees/managers
+    """
+    template_name = 'myapp/login.html'
+    
+    def get(self, request):
+        """Display login form"""
+        # Redirect if already logged in
+        if request.session.get('user_id'):
+            if request.session.get('user_type') == 'customer':
+                return redirect('myapp:customer_dashboard')
+            elif request.session.get('user_type') == 'employee':
+                return redirect('myapp:manager_dashboard')
+        
+        return render(request, self.template_name)
+    
+    def post(self, request):
+        """Handle login form submission"""
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        user_type = request.POST.get('user_type', 'customer')
+        
+        if not username or not password:
+            messages.error(request, 'Please provide both username and password.')
+            return render(request, self.template_name)
+        
+        # Authenticate based on user type
+        user = authenticate(request, username=username, password=password)
+        
+        if user:
+            # Set session variables
+            if isinstance(user, Customers):
+                request.session['user_id'] = user.customer_id
+                request.session['user_type'] = 'customer'
+                request.session['user_name'] = user.company_name
+                messages.success(request, f'Welcome back, {user.company_name}!')
+                return redirect('myapp:customer_dashboard')
+            
+            elif isinstance(user, Employees):
+                request.session['user_id'] = user.employee_id
+                request.session['user_type'] = 'employee'
+                request.session['user_name'] = f'{user.first_name} {user.last_name}'
+                messages.success(request, f'Welcome, {user.first_name}!')
+                return redirect('myapp:manager_dashboard')
+        
+        # Authentication failed
+        messages.error(request, 'Invalid credentials. Please try again.')
+        return render(request, self.template_name)
+
+
+def logout_view(request):
+    """
+    Logout view - clears session and redirects to home
+    """
+    user_name = request.session.get('user_name', 'User')
+    
+    # Clear all session data
+    request.session.flush()
+    
+    messages.success(request, f'Goodbye, {user_name}! You have been logged out.')
+    return redirect('myapp:home')
+
+
+# ====================== DASHBOARD VIEWS ======================
+
+class CustomerDashboardView(TemplateView):
+    """
+    Customer dashboard showing personal sales analytics and trends
+    Requirement 1: Customer Sales Analysis (40%)
+    """
+    template_name = 'myapp/customer_dashboard.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Check if customer is logged in"""
+        if not request.session.get('user_id') or request.session.get('user_type') != 'customer':
+            messages.warning(request, 'Please log in to view your dashboard.')
+            return redirect('myapp:login')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        customer_id = self.request.session.get('user_id')
+        
+        # Get customer object
+        customer = get_object_or_404(Customers, customer_id=customer_id)
+        context['customer'] = customer
+        
+        # Get filter parameters
+        selected_year = self.request.GET.get('year', '')
+        selected_month = self.request.GET.get('month', '')
+        
+        # Base queryset - all orders for this customer
+        orders_qs = Orders.objects.filter(customer=customer)
+        
+        # Get all years with orders
+        years = orders_qs.dates('order_date', 'year', order='DESC')
+        context['years'] = [year.year for year in years]
+        context['selected_year'] = selected_year
+        context['selected_month'] = selected_month
+        
+        # Filter by year if selected
+        if selected_year:
+            orders_qs = orders_qs.filter(order_date__year=int(selected_year))
+            
+            # Get months for selected year
+            months = orders_qs.dates('order_date', 'month', order='ASC')
+            context['months'] = [(month.month, calendar.month_name[month.month]) for month in months]
+            
+            # Filter by month if selected
+            if selected_month:
+                orders_qs = orders_qs.filter(order_date__month=int(selected_month))
+        
+        # Calculate summary statistics
+        order_details = OrderDetails.objects.filter(order__in=orders_qs)
+        
+        summary = order_details.annotate(
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).aggregate(
+            total_orders=Count('order', distinct=True),
+            total_products=Sum('quantity'),
+            total_revenue=Sum('line_revenue')
+        )
+        
+        context['total_orders'] = summary['total_orders'] or 0
+        context['total_products'] = summary['total_products'] or 0
+        context['total_revenue'] = summary['total_revenue'] or 0
+        context['avg_order_value'] = (summary['total_revenue'] / summary['total_orders']) if summary['total_orders'] else 0
+        
+        # Annual sales breakdown (for all years or selected year)
+        if selected_year:
+            # Monthly breakdown for selected year
+            monthly_sales = order_details.annotate(
+                month=TruncMonth('order__order_date'),
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values('month').annotate(
+                orders=Count('order', distinct=True),
+                products=Sum('quantity'),
+                revenue=Sum('line_revenue')
+            ).order_by('month')
+            context['monthly_sales'] = list(monthly_sales)
+        else:
+            # Yearly breakdown
+            yearly_sales = order_details.annotate(
+                year=TruncYear('order__order_date'),
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values('year').annotate(
+                orders=Count('order', distinct=True),
+                products=Sum('quantity'),
+                revenue=Sum('line_revenue')
+            ).order_by('-year')
+            context['yearly_sales'] = list(yearly_sales)
+        
+        # Top 10 products
+        if selected_year:
+            top_products_qs = order_details.filter(order__order_date__year=int(selected_year))
+        else:
+            top_products_qs = order_details
+        
+        top_products = top_products_qs.annotate(
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).values(
+            'product__product_name',
+            'product__product_id'
+        ).annotate(
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum('line_revenue'),
+            order_count=Count('order', distinct=True)
+        ).order_by('-total_quantity')[:10]
+        context['top_products'] = list(top_products)
+        
+        # Top 10 products by year (for year-over-year comparison)
+        top_products_by_year = {}
+        for year in context['years']:
+            year_products = order_details.filter(
+                order__order_date__year=year
+            ).annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values(
+                'product__product_name',
+                'product__product_id'
+            ).annotate(
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum('line_revenue')
+            ).order_by('-total_quantity')[:10]
+            top_products_by_year[year] = list(year_products)
+        context['top_products_by_year'] = top_products_by_year
+        
+        # Top 10 categories
+        top_categories = top_products_qs.annotate(
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).values(
+            'product__category__category_name',
+            'product__category__category_id'
+        ).annotate(
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum('line_revenue'),
+            order_count=Count('order', distinct=True)
+        ).order_by('-total_quantity')[:10]
+        context['top_categories'] = list(top_categories)
+        
+        # Top 10 categories by year (for year-over-year comparison)
+        top_categories_by_year = {}
+        for year in context['years']:
+            year_categories = order_details.filter(
+                order__order_date__year=year
+            ).annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values(
+                'product__category__category_name',
+                'product__category__category_id'
+            ).annotate(
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum('line_revenue')
+            ).order_by('-total_quantity')[:10]
+            top_categories_by_year[year] = list(year_categories)
+        context['top_categories_by_year'] = top_categories_by_year
+        
+        # Recent orders
+        recent_orders = orders_qs.order_by('-order_date')[:5]
+        context['recent_orders'] = recent_orders
+        
+        # Product recommendations based on purchasing patterns
+        recommended_products = get_product_recommendations(customer, limit=6)
+        context['recommended_products'] = recommended_products
+        
+        return context
+
+
+class ManagerDashboardView(TemplateView):
+    """
+    Manager/Employee dashboard for overall sales analytics
+    Requirement 2: Product/Sales Analysis (45%)
+    """
+    template_name = 'myapp/manager_dashboard.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Check if employee/manager is logged in"""
+        if not request.session.get('user_id') or request.session.get('user_type') != 'employee':
+            messages.warning(request, 'Manager access required. Please log in.')
+            return redirect('myapp:login')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        employee_id = self.request.session.get('user_id')
+        
+        # Get employee object
+        employee = get_object_or_404(Employees, employee_id=employee_id)
+        context['employee'] = employee
+        
+        # Get filter parameters
+        selected_year = self.request.GET.get('year', '')
+        selected_product = self.request.GET.get('product', '')
+        
+        # Base queryset - all orders
+        orders_qs = Orders.objects.all()
+        order_details_qs = OrderDetails.objects.all()
+        
+        # Get all years
+        years = orders_qs.dates('order_date', 'year', order='DESC')
+        context['years'] = [year.year for year in years]
+        context['selected_year'] = selected_year
+        context['selected_product'] = selected_product
+        
+        # Get all products that have been ordered
+        products = Products.objects.filter(
+            orderdetails__isnull=False
+        ).distinct().order_by('product_name')
+        context['products'] = products
+        
+        # Filter by year if selected
+        if selected_year:
+            orders_qs = orders_qs.filter(order_date__year=int(selected_year))
+            order_details_qs = order_details_qs.filter(order__order_date__year=int(selected_year))
+        
+        # Overall statistics
+        summary = order_details_qs.annotate(
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).aggregate(
+            total_orders=Count('order', distinct=True),
+            total_products=Sum('quantity'),
+            total_revenue=Sum('line_revenue'),
+            avg_discount=Avg('discount')
+        )
+        
+        context['total_orders'] = summary['total_orders'] or 0
+        context['total_products'] = summary['total_products'] or 0
+        context['total_revenue'] = summary['total_revenue'] or 0
+        context['avg_order_value'] = (summary['total_revenue'] / summary['total_orders']) if summary['total_orders'] else 0
+        context['avg_discount'] = (summary['avg_discount'] * 100) if summary['avg_discount'] else 0
+        
+        # Yearly sales breakdown (Annual Sales Overview)
+        yearly_sales = OrderDetails.objects.annotate(
+            year=TruncYear('order__order_date'),
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).values('year').annotate(
+            orders=Count('order', distinct=True),
+            products=Sum('quantity'),
+            revenue=Sum('line_revenue')
+        ).order_by('-year')
+        context['yearly_sales'] = list(yearly_sales)
+        
+        # Monthly sales breakdown (when year is selected or for all time)
+        if selected_year:
+            # Monthly breakdown for selected year
+            monthly_sales = order_details_qs.annotate(
+                month=TruncMonth('order__order_date'),
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values('month').annotate(
+                orders=Count('order', distinct=True),
+                products=Sum('quantity'),
+                revenue=Sum('line_revenue')
+            ).order_by('month')
+            context['monthly_sales'] = list(monthly_sales)
+        else:
+            # Monthly aggregate across all years
+            monthly_sales_all = OrderDetails.objects.annotate(
+                month_num=F('order__order_date__month'),
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values('month_num').annotate(
+                orders=Count('order', distinct=True),
+                products=Sum('quantity'),
+                revenue=Sum('line_revenue')
+            ).order_by('month_num')
+            context['monthly_sales_all'] = list(monthly_sales_all)
+        
+        # Top 10 revenue-generating products
+        top_products = order_details_qs.annotate(
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).values(
+            'product__product_name',
+            'product__product_id',
+            'product__category__category_name'
+        ).annotate(
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum('line_revenue'),
+            order_count=Count('order', distinct=True)
+        ).order_by('-total_revenue')[:10]
+        context['top_products'] = list(top_products)
+        
+        # Bottom 10 revenue-generating products (only products that have been sold)
+        bottom_products = order_details_qs.annotate(
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).values(
+            'product__product_name',
+            'product__product_id',
+            'product__category__category_name'
+        ).annotate(
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum('line_revenue'),
+            order_count=Count('order', distinct=True)
+        ).order_by('total_revenue')[:10]
+        context['bottom_products'] = list(bottom_products)
+        
+        # Category performance (Category Sales Analysis)
+        category_performance = order_details_qs.annotate(
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).values(
+            'product__category__category_name',
+            'product__category__category_id'
+        ).annotate(
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum('line_revenue'),
+            order_count=Count('order', distinct=True),
+            product_count=Count('product', distinct=True)
+        ).order_by('-total_revenue')
+        context['category_performance'] = list(category_performance)
+        
+        # PRODUCT SALES ANALYSIS - Individual Product Drill-Down
+        if selected_product:
+            product = get_object_or_404(Products, product_id=int(selected_product))
+            context['product'] = product
+            
+            # Get order details for this specific product
+            product_order_details_qs = OrderDetails.objects.filter(product=product)
+            
+            # Filter by year if selected
+            if selected_year:
+                product_order_details_qs = product_order_details_qs.filter(
+                    order__order_date__year=int(selected_year)
+                )
+            
+            # Product summary statistics
+            product_summary = product_order_details_qs.annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).aggregate(
+                total_orders=Count('order', distinct=True),
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum('line_revenue'),
+                avg_discount=Avg('discount'),
+                avg_quantity_per_order=Avg('quantity')
+            )
+            context['product_summary'] = product_summary
+            
+            # Monthly breakdown for the selected product
+            product_monthly_sales = product_order_details_qs.annotate(
+                month=TruncMonth('order__order_date'),
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values('month').annotate(
+                orders=Count('order', distinct=True),
+                quantity=Sum('quantity'),
+                revenue=Sum('line_revenue')
+            ).order_by('month')
+            context['product_monthly_sales'] = list(product_monthly_sales)
+            
+            # Calculate average across all products for comparison
+            all_products_stats = OrderDetails.objects.annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).aggregate(
+                total_revenue=Sum('line_revenue'),
+                total_count=Count('*'),
+                avg_quantity=Avg('quantity')
+            )
+            
+            # Calculate averages
+            if all_products_stats['total_count'] and all_products_stats['total_count'] > 0:
+                avg_revenue_per_line = all_products_stats['total_revenue'] / all_products_stats['total_count']
+            else:
+                avg_revenue_per_line = 0
+            
+            context['all_products_avg'] = {
+                'avg_revenue_per_line': avg_revenue_per_line,
+                'avg_quantity': all_products_stats['avg_quantity'] or 0
+            }
+        
+        return context
+
+
+class ProductAnalysisView(TemplateView):
+    """
+    Detailed product-level sales analysis
+    Requirement 2: Product/Sales Analysis
+    """
+    template_name = 'myapp/product_analysis.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Check if employee/manager is logged in"""
+        if not request.session.get('user_id') or request.session.get('user_type') != 'employee':
+            messages.warning(request, 'Manager access required.')
+            return redirect('myapp:login')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get filter parameters
+        selected_product = self.request.GET.get('product', '')
+        selected_year = self.request.GET.get('year', '')
+        
+        # Get all products that have been ordered
+        products = Products.objects.filter(
+            orderdetails__isnull=False
+        ).distinct().order_by('product_name')
+        context['products'] = products
+        context['selected_product'] = selected_product
+        context['selected_year'] = selected_year
+        
+        # Get all years for filter dropdown
+        all_years = Orders.objects.dates('order_date', 'year', order='DESC')
+        context['years'] = [year.year for year in all_years]
+        
+        # TOP 10 PRODUCTS ANALYSIS - Show always
+        # All years
+        top_products_all = OrderDetails.objects.annotate(
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).values(
+            'product__product_name',
+            'product__product_id'
+        ).annotate(
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum('line_revenue')
+        ).order_by('-total_quantity')[:10]
+        top_products_all_list = list(top_products_all)
+        context['top_products_all'] = top_products_all_list
+        context['top_products_all_json'] = json.dumps(convert_to_json_safe(top_products_all_list))
+        
+        # By selected year (if year is selected)
+        if selected_year:
+            top_products_year = OrderDetails.objects.filter(
+                order__order_date__year=int(selected_year)
+            ).annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values(
+                'product__product_name',
+                'product__product_id'
+            ).annotate(
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum('line_revenue')
+            ).order_by('-total_quantity')[:10]
+            top_products_year_list = list(top_products_year)
+            context['top_products_year'] = top_products_year_list
+            context['top_products_year_json'] = json.dumps(convert_to_json_safe(top_products_year_list))
+        
+        if selected_product:
+            product = get_object_or_404(Products, product_id=int(selected_product))
+            context['product'] = product
+            
+            # Get order details for this product
+            order_details_qs = OrderDetails.objects.filter(product=product)
+            
+            # Get all years
+            years = Orders.objects.filter(
+                orderdetails__product=product
+            ).dates('order_date', 'year', order='DESC')
+            context['years'] = [year.year for year in years]
+            
+            # Filter by year if selected
+            if selected_year:
+                order_details_qs = order_details_qs.filter(order__order_date__year=int(selected_year))
+            
+            # Product summary statistics
+            summary = order_details_qs.annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).aggregate(
+                total_orders=Count('order', distinct=True),
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum('line_revenue'),
+                avg_discount=Avg('discount'),
+                avg_quantity_per_order=Avg('quantity')
+            )
+            context['summary'] = summary
+            
+            # Monthly breakdown
+            monthly_sales = order_details_qs.annotate(
+                month=TruncMonth('order__order_date'),
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values('month').annotate(
+                orders=Count('order', distinct=True),
+                quantity=Sum('quantity'),
+                revenue=Sum('line_revenue')
+            ).order_by('month')
+            context['monthly_sales'] = list(monthly_sales)
+            
+            # Calculate average across all products for comparison
+            all_products_stats = OrderDetails.objects.annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).aggregate(
+                total_revenue=Sum('line_revenue'),
+                total_count=Count('*')
+            )
+            # Calculate average manually
+            if all_products_stats['total_count'] and all_products_stats['total_count'] > 0:
+                avg_revenue = all_products_stats['total_revenue'] / all_products_stats['total_count']
+            else:
+                avg_revenue = 0
+            
+            context['all_products_avg'] = {'avg_revenue_per_product': avg_revenue}
+        
+        return context
+
+
+class CategoryAnalysisView(TemplateView):
+    """
+    Category-level sales analysis
+    Requirement 2: Product/Sales Analysis
+    """
+    template_name = 'myapp/category_analysis.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        """Check if employee/manager is logged in"""
+        if not request.session.get('user_id') or request.session.get('user_type') != 'employee':
+            messages.warning(request, 'Manager access required.')
+            return redirect('myapp:login')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get filter parameters
+        selected_category = self.request.GET.get('category', '')
+        selected_year = self.request.GET.get('year', '')
+        
+        # Get all categories
+        categories = Categories.objects.all().order_by('category_name')
+        context['categories'] = categories
+        context['selected_category'] = selected_category
+        context['selected_year'] = selected_year
+        
+        # Get all years for filter dropdown
+        all_years = Orders.objects.dates('order_date', 'year', order='DESC')
+        context['years'] = [year.year for year in all_years]
+        
+        # TOP 10 CATEGORIES ANALYSIS - Show always
+        # All years
+        top_categories_all = OrderDetails.objects.annotate(
+            line_revenue=ExpressionWrapper(
+                F('unit_price') * F('quantity') * (1 - F('discount')),
+                output_field=FloatField()
+            )
+        ).values(
+            'product__category__category_name',
+            'product__category__category_id'
+        ).annotate(
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum('line_revenue')
+        ).order_by('-total_quantity')[:10]
+        top_categories_all_list = list(top_categories_all)
+        context['top_categories_all'] = top_categories_all_list
+        context['top_categories_all_json'] = json.dumps(convert_to_json_safe(top_categories_all_list))
+        
+        # By selected year (if year is selected)
+        if selected_year:
+            top_categories_year = OrderDetails.objects.filter(
+                order__order_date__year=int(selected_year)
+            ).annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values(
+                'product__category__category_name',
+                'product__category__category_id'
+            ).annotate(
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum('line_revenue')
+            ).order_by('-total_quantity')[:10]
+            top_categories_year_list = list(top_categories_year)
+            context['top_categories_year'] = top_categories_year_list
+            context['top_categories_year_json'] = json.dumps(convert_to_json_safe(top_categories_year_list))
+        
+        if selected_category:
+            category = get_object_or_404(Categories, category_id=int(selected_category))
+            context['category'] = category
+            
+            # Get order details for products in this category
+            order_details_qs = OrderDetails.objects.filter(product__category=category)
+            
+            # Get all years
+            years = Orders.objects.filter(
+                orderdetails__product__category=category
+            ).dates('order_date', 'year', order='DESC')
+            context['years'] = [year.year for year in years]
+            
+            # Filter by year if selected
+            if selected_year:
+                order_details_qs = order_details_qs.filter(order__order_date__year=int(selected_year))
+            
+            # Category summary statistics
+            summary = order_details_qs.annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).aggregate(
+                total_orders=Count('order', distinct=True),
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum('line_revenue'),
+                product_count=Count('product', distinct=True)
+            )
+            context['summary'] = summary
+            
+            # Monthly breakdown
+            monthly_sales = order_details_qs.annotate(
+                month=TruncMonth('order__order_date'),
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values('month').annotate(
+                orders=Count('order', distinct=True),
+                quantity=Sum('quantity'),
+                revenue=Sum('line_revenue')
+            ).order_by('month')
+            context['monthly_sales'] = list(monthly_sales)
+            
+            # Top products in this category
+            top_products = order_details_qs.annotate(
+                line_revenue=ExpressionWrapper(
+                    F('unit_price') * F('quantity') * (1 - F('discount')),
+                    output_field=FloatField()
+                )
+            ).values(
+                'product__product_name',
+                'product__product_id'
+            ).annotate(
+                total_quantity=Sum('quantity'),
+                total_revenue=Sum('line_revenue'),
+                order_count=Count('order', distinct=True)
+            ).order_by('-total_revenue')[:10]
+            context['top_products'] = list(top_products)
+        
+        return context

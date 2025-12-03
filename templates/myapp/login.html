@@ -1,0 +1,83 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Login - Django
+Traders{% endblock %} {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}" />
+{% endblock %} {% block content %}
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <i class="bi bi-shield-lock"></i>
+      <h2>Welcome Back</h2>
+      <p>Sign in to access your dashboard</p>
+    </div>
+
+    <form method="post" id="loginForm">
+      {% csrf_token %}
+
+      <!-- Username Field -->
+      <div class="form-group">
+        <label for="username"> <i class="bi bi-person"></i> Username </label>
+        <input
+          type="text"
+          class="form-control"
+          id="username"
+          name="username"
+          placeholder="Enter your customer ID or employee ID"
+          required
+          autofocus
+        />
+        <small class="form-text"
+          >Customer ID (e.g., ALFKI) or Employee ID (e.g., 1)</small
+        >
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password"> <i class="bi bi-lock"></i> Password </label>
+        <input
+          type="password"
+          class="form-control"
+          id="password"
+          name="password"
+          placeholder="Enter your password"
+          required
+        />
+      </div>
+
+      <!-- User Type Selection (Hidden for simplicity - auto-detected) -->
+      <input type="hidden" name="user_type" value="customer" />
+
+      <!-- Submit Button -->
+      <button type="submit" class="btn btn-primary btn-block">
+        <i class="bi bi-box-arrow-in-right"></i> Sign In
+      </button>
+    </form>
+
+    <div class="login-footer">
+      <p><i class="bi bi-info-circle"></i> Demo Credentials:</p>
+      <div class="demo-credentials">
+        <div><strong>Customer:</strong> ALFKI / password: (check database)</div>
+        <div><strong>Manager:</strong> 1 / password: manager123</div>
+      </div>
+      <a href="{% url 'myapp:home' %}" class="back-link">
+        <i class="bi bi-arrow-left"></i> Back to Home
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  // Auto-focus on username field
+  document.getElementById("username").focus();
+
+  // Form validation
+  document.getElementById("loginForm").addEventListener("submit", function (e) {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!username || !password) {
+      e.preventDefault();
+      alert("Please enter both username and password.");
+    }
+  });
+</script>
+{% endblock %}

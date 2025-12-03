@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Category Analysis - Django Traders{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/manager_dashboard.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <div>
+      <h1><i class="bi bi-grid-3x3"></i> Category Sales Analysis</h1>
+      <p class="subtitle">Performance metrics by product category</p>
+    </div>
+    <nav class="breadcrumb-nav">
+      <a href="{% url 'myapp:home' %}">Home</a> &gt; 
+      <a href="{% url 'myapp:manager_dashboard' %}">Dashboard</a> &gt; Category Analysis
+    </nav>
+  </div>
+
+  <!-- Quick Navigation -->
+  <div class="quick-nav">
+    <a href="{% url 'myapp:manager_dashboard' %}" class="nav-card">
+      <i class="bi bi-speedometer2"></i>
+      <span>Dashboard</span>
+    </a>
+    <a href="{% url 'myapp:product_analysis' %}" class="nav-card">
+      <i class="bi bi-box-seam"></i>
+      <span>Product Analysis</span>
+    </a>
+    <a href="{% url 'myapp:category_analysis' %}" class="nav-card active">
+      <i class="bi bi-grid-3x3"></i>
+      <span>Category Analysis</span>
+    </a>
+  </div>
+
+  <!-- Top 10 Categories Analysis -->
+  <div class="chart-section">
+    <div class="chart-header">
+      <h2><i class="bi bi-trophy"></i> Top 10 Most Bought Categories</h2>
+      <p>{% if selected_year %}{{ selected_year }}{% else %}All Years{% endif %}</p>
+    </div>
+    <div class="chart-container" style="height: 500px;">
+      <canvas id="topCategoriesChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Category Selection Filter -->
+  <div class="filter-section">
+    <form method="get" class="filter-form">
+      <div class="filter-group">
+        <label for="category"><i class="bi bi-grid"></i> Select Category</label>
+        <select name="category" id="category" class="form-select" onchange="this.form.submit()">
+          <option value="">-- Choose a category --</option>
+          {% for cat in categories %}
+          <option value="{{ cat.category_id }}" {% if cat.category_id|stringformat:"s" == selected_category %}selected{% endif %}>
+            {{ cat.category_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if selected_category %}
+      <div class="filter-group">
+        <label for="year"><i class="bi bi-calendar"></i> Year</label>
+        <select name="year" id="year" class="form-select" onchange="this.form.submit()">
+          <option value="">All Years</option>
+          {% for year in years %}
+          <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>
+            {{ year }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <a href="{% url 'myapp:category_analysis' %}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-x-circle"></i> Clear
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if category %}
+  <!-- Category Summary -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon orders">
+        <i class="bi bi-cart-check"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Total Orders</div>
+        <div class="kpi-value">{{ summary.total_orders|default:0 }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon products">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Units Sold</div>
+        <div class="kpi-value">{{ summary.total_quantity|default:0 }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon revenue">
+        <i class="bi bi-currency-dollar"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value">${{ summary.total_revenue|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon average">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Products</div>
+        <div class="kpi-value">{{ summary.product_count|default:0 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Sales Trend -->
+  <div class="chart-section">
+    <div class="chart-header">
+      <h2><i class="bi bi-graph-up-arrow"></i> {{ category.category_name }} - Monthly Sales</h2>
+      <p>Revenue trend over time</p>
+    </div>
+    <div class="chart-container">
+      <canvas id="categoryTrendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Top Products in Category -->
+  <div class="analysis-section">
+    <div class="section-header">
+      <h2><i class="bi bi-trophy"></i> Top 10 Products in {{ category.category_name }}</h2>
+      <p>{% if selected_year %}{{ selected_year }}{% else %}All Time{% endif %}</p>
+    </div>
+    {% if top_products %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product</th>
+            <th>Orders</th>
+            <th>Quantity</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in top_products %}
+          <tr>
+            <td class="rank-cell">
+              <span class="rank-badge rank-{{ forloop.counter }}">{{ forloop.counter }}</span>
+            </td>
+            <td>
+              <a href="{% url 'myapp:product_detail' product.product__product_id %}">
+                {{ product.product__product_name }}
+              </a>
+            </td>
+            <td class="text-center">{{ product.order_count }}</td>
+            <td class="text-center">{{ product.total_quantity }}</td>
+            <td class="revenue-cell">${{ product.total_revenue|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-inbox"></i>
+      <p>No products found in this category</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Monthly Data Table -->
+  {% if monthly_sales %}
+  <div class="analysis-section">
+    <div class="section-header">
+      <h2><i class="bi bi-table"></i> Monthly Breakdown</h2>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Orders</th>
+            <th>Quantity</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in monthly_sales %}
+          <tr>
+            <td><strong>{{ sale.month|date:"M Y" }}</strong></td>
+            <td class="text-center">{{ sale.orders }}</td>
+            <td class="text-center">{{ sale.quantity }}</td>
+            <td class="revenue-cell">${{ sale.revenue|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- No Category Selected -->
+  <div class="empty-state" style="padding: 80px 24px;">
+    <i class="bi bi-search"></i>
+    <p>Select a category above to view detailed analysis</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Top 10 Categories Chart -->
+<script>
+  // Data for top categories
+  const topCategoriesData = {% if selected_year and top_categories_year_json %}{{ top_categories_year_json|safe }}{% else %}{{ top_categories_all_json|safe }}{% endif %};
+  
+  if (topCategoriesData && topCategoriesData.length > 0) {
+    const topCategoryLabels = topCategoriesData.map(c => c.product__category__category_name);
+    const topCategoryQuantities = topCategoriesData.map(c => c.total_quantity);
+    const topCategoryRevenues = topCategoriesData.map(c => c.total_revenue);
+
+    const topCategoriesCtx = document.getElementById('topCategoriesChart');
+    if (topCategoriesCtx) {
+      new Chart(topCategoriesCtx, {
+        type: 'bar',
+        data: {
+          labels: topCategoryLabels,
+          datasets: [{
+            label: 'Units Sold',
+            data: topCategoryQuantities,
+            backgroundColor: 'rgba(0, 113, 227, 0.8)',
+            borderRadius: 8,
+            yAxisID: 'y'
+          }, {
+            label: 'Revenue ($)',
+            data: topCategoryRevenues,
+            backgroundColor: 'rgba(52, 199, 89, 0.8)',
+            borderRadius: 8,
+            yAxisID: 'y1'
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) {
+                    label += ': ';
+                  }
+                  if (context.datasetIndex === 1) {
+                    label += '$' + context.parsed.x.toLocaleString();
+                  } else {
+                    label += context.parsed.x.toLocaleString();
+                  }
+                  return label;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            },
+            y1: {
+              beginAtZero: true,
+              position: 'top',
+              grid: {
+                drawOnChartArea: false
+              },
+              ticks: {
+                callback: function(value) {
+                  return '$' + value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  } else {
+    console.error('No top categories data available');
+  }
+</script>
+
+{% if category and monthly_sales %}
+<script>
+  const monthLabels = [
+    {% for sale in monthly_sales %}
+    "{{ sale.month|date:'M Y' }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const monthRevenue = [
+    {% for sale in monthly_sales %}
+    {{ sale.revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const monthQuantity = [
+    {% for sale in monthly_sales %}
+    {{ sale.quantity|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  const ctx = document.getElementById('categoryTrendChart');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        label: 'Revenue ($)',
+        data: monthRevenue,
+        backgroundColor: 'rgba(0, 113, 227, 0.8)',
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

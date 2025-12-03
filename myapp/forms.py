@@ -8,12 +8,11 @@ class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customers
         fields = [
-            'customer_id', 'company_name', 'contact_name', 'contact_title',
+            'company_name', 'contact_name', 'contact_title',
             'address', 'city', 'region', 'postal_code', 'country', 
             'phone', 'fax', 'password'
         ]
         widgets = {
-            'customer_id': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '5'}),
             'company_name': forms.TextInput(attrs={'class': 'form-control'}),
             'contact_name': forms.TextInput(attrs={'class': 'form-control'}),
             'contact_title': forms.TextInput(attrs={'class': 'form-control'}),
@@ -27,56 +26,158 @@ class CustomerForm(forms.ModelForm):
             'password': forms.PasswordInput(attrs={'class': 'form-control'}),
         }
 
-    def clean_customer_id(self):
-        customer_id = self.cleaned_data.get('customer_id')
-        if customer_id:
-            if len(customer_id) != 5:
-                raise forms.ValidationError("Customer ID must be exactly 5 characters long.")
-            if not customer_id.isalnum():
-                raise forms.ValidationError("Customer ID must contain only letters and numbers.")
-            
-            if not self.instance.pk and Customers.objects.filter(customer_id=customer_id).exists():
-                raise forms.ValidationError("A customer with this ID already exists.")
-        return customer_id.upper() if customer_id else customer_id
-
     def clean_company_name(self):
         company_name = self.cleaned_data.get('company_name')
         if company_name:
+            # Remove extra whitespace
+            company_name = ' '.join(company_name.split())
+            
+            # Check if empty after stripping
+            if not company_name.strip():
+                raise forms.ValidationError("Company name cannot be empty or only whitespace.")
+            
+            # Check if company name contains only numbers
             if company_name.isdigit():
                 raise forms.ValidationError("Company name cannot contain only numbers.")
-            company_name = ' '.join(company_name.split())
+            
+            # Check minimum length
+            if len(company_name) < 2:
+                raise forms.ValidationError("Company name must be at least 2 characters long.")
+            
+            # Check for duplicate company names (case-insensitive)
+            duplicate_check = Customers.objects.filter(company_name__iexact=company_name)
+            if self.instance.pk:
+                duplicate_check = duplicate_check.exclude(customer_id=self.instance.pk)
+            
+            if duplicate_check.exists():
+                raise forms.ValidationError(f"A customer with the company name '{company_name}' already exists.")
+        else:
+            raise forms.ValidationError("Company name is required.")
+        
         return company_name
 
     def clean_contact_name(self):
         contact_name = self.cleaned_data.get('contact_name')
         if contact_name:
+            # Remove extra whitespace
+            contact_name = ' '.join(contact_name.split())
+            
+            # Check if contains numbers
             if any(char.isdigit() for char in contact_name):
                 raise forms.ValidationError("Contact name should not contain numbers.")
+            
+            # Check for valid characters (letters, spaces, hyphens, periods, apostrophes)
             if not re.match(r'^[a-zA-Z\s\-\.\']+$', contact_name):
-                raise forms.ValidationError("Contact name contains invalid characters.")
-            contact_name = ' '.join(contact_name.split())
+                raise forms.ValidationError("Contact name contains invalid characters. Only letters, spaces, hyphens, periods, and apostrophes are allowed.")
+            
+            # Check minimum length if provided
+            if len(contact_name) < 2:
+                raise forms.ValidationError("Contact name must be at least 2 characters long.")
+        
         return contact_name
+
+    def clean_city(self):
+        city = self.cleaned_data.get('city')
+        if city:
+            # Remove extra whitespace
+            city = ' '.join(city.split())
+            
+            # Check if contains numbers
+            if any(char.isdigit() for char in city):
+                raise forms.ValidationError("City name should not contain numbers.")
+            
+            # Check for valid characters
+            if not re.match(r'^[a-zA-Z\s\-\.\']+$', city):
+                raise forms.ValidationError("City name contains invalid characters.")
+            
+            # Check minimum length
+            if len(city) < 2:
+                raise forms.ValidationError("City name must be at least 2 characters long.")
+        
+        return city
+
+    def clean_country(self):
+        country = self.cleaned_data.get('country')
+        if country:
+            # Remove extra whitespace
+            country = ' '.join(country.split())
+            
+            # Check if contains numbers
+            if any(char.isdigit() for char in country):
+                raise forms.ValidationError("Country name should not contain numbers.")
+            
+            # Check for valid characters
+            if not re.match(r'^[a-zA-Z\s\-\.\']+$', country):
+                raise forms.ValidationError("Country name contains invalid characters.")
+            
+            # Check minimum length
+            if len(country) < 2:
+                raise forms.ValidationError("Country name must be at least 2 characters long.")
+        
+        return country
 
     def clean_postal_code(self):
         postal_code = self.cleaned_data.get('postal_code')
         if postal_code:
+            # Remove extra whitespace
+            postal_code = postal_code.strip()
+            
+            # Check for valid characters (alphanumeric, spaces, hyphens)
             if not re.match(r'^[a-zA-Z0-9\s\-]+$', postal_code):
-                raise forms.ValidationError("Postal code contains invalid characters.")
+                raise forms.ValidationError("Postal code contains invalid characters. Only letters, numbers, spaces, and hyphens are allowed.")
+            
+            # Check minimum length
+            if len(postal_code) < 3:
+                raise forms.ValidationError("Postal code must be at least 3 characters long.")
+        
         return postal_code
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone')
         if phone:
+            # Remove extra whitespace
+            phone = phone.strip()
+            
+            # Check for valid characters (digits, +, -, (, ), spaces, .)
             if not re.match(r'^[\d\+\-\(\)\s\.]+$', phone):
-                raise forms.ValidationError("Phone number contains invalid characters.")
+                raise forms.ValidationError("Phone number contains invalid characters. Only digits, +, -, (, ), spaces, and periods are allowed.")
+            
+            # Check minimum length (at least 7 digits for a valid phone number)
+            digits_only = re.sub(r'[^\d]', '', phone)
+            if len(digits_only) < 7:
+                raise forms.ValidationError("Phone number must contain at least 7 digits.")
+        
         return phone
 
     def clean_fax(self):
         fax = self.cleaned_data.get('fax')
         if fax:
+            # Remove extra whitespace
+            fax = fax.strip()
+            
+            # Check for valid characters
             if not re.match(r'^[\d\+\-\(\)\s\.]+$', fax):
-                raise forms.ValidationError("Fax number contains invalid characters.")
+                raise forms.ValidationError("Fax number contains invalid characters. Only digits, +, -, (, ), spaces, and periods are allowed.")
+            
+            # Check minimum length
+            digits_only = re.sub(r'[^\d]', '', fax)
+            if len(digits_only) < 7:
+                raise forms.ValidationError("Fax number must contain at least 7 digits.")
+        
         return fax
+
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if password:
+            # Check minimum length
+            if len(password) < 6:
+                raise forms.ValidationError("Password must be at least 6 characters long.")
+            
+            # Check maximum length
+            if len(password) > 64:
+                raise forms.ValidationError("Password cannot exceed 64 characters.")
+        
+        return password
 
 
 # ======================== ORDER FORMS ========================
@@ -353,6 +454,10 @@ class ProductForm(forms.ModelForm):
         if quantity_per_unit:
             # Remove extra whitespace
             quantity_per_unit = ' '.join(quantity_per_unit.split())
+            
+            # Check minimum length
+            if len(quantity_per_unit) < 2:
+                raise forms.ValidationError("Quantity per unit must be at least 2 characters long.")
         
         return quantity_per_unit
     
@@ -361,8 +466,16 @@ class ProductForm(forms.ModelForm):
         cleaned_data = super().clean()
         
         units_in_stock = cleaned_data.get('units_in_stock')
+        units_on_order = cleaned_data.get('units_on_order')
         reorder_level = cleaned_data.get('reorder_level')
         discontinued = cleaned_data.get('discontinued')
+        unit_price = cleaned_data.get('unit_price')
+        
+        # Check if unit price is set when product is active
+        if discontinued == 0 and (unit_price is None or unit_price <= 0):
+            self.add_error('unit_price', forms.ValidationError(
+                "Active products must have a unit price greater than $0.00."
+            ))
         
         # Warning if stock is below reorder level
         if units_in_stock is not None and reorder_level is not None:
@@ -372,5 +485,12 @@ class ProductForm(forms.ModelForm):
                     f"Warning: Stock level ({units_in_stock}) is below reorder level ({reorder_level}).",
                     code='low_stock_warning'
                 ))
+        
+        # Warning if discontinuing a product with stock on order
+        if discontinued == 1 and units_on_order is not None and units_on_order > 0:
+            self.add_error(None, forms.ValidationError(
+                f"Warning: You are discontinuing a product with {units_on_order} units on order.",
+                code='discontinued_with_orders_warning'
+            ))
         
         return cleaned_data

@@ -1,25 +1,27 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} 
+{% load static %} 
 
-{% load static %}
-
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title }}{%endblock %} 
 
 {% block content %}
 
-<link rel="stylesheet" href="{% static 'css/home.css' %}">
+<link rel="stylesheet" href="{% static 'css/home.css' %}" />
 <div class="home-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <h2>Welcome to Django Traders</h2>
+    <p>Customers. Products. Orders. Simplified.</p>
+  </section>
 
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <h2>Welcome to Django Traders</h2>
-        <p>Customers. Products. Orders. Simplified.</p>
-    </section>
-
-    <!-- Features Section -->
-    <section class="manage-customers">
-        <a href="{% url 'myapp:customer_list_class' %}" class="manage-btn">Manage Customers</a>
-        <a href="{% url 'myapp:product_list' %}" class="manage-btn">Manage Products</a>
-    </section>
+  <!-- Features Section -->
+  <section class="manage-customers">
+    <a href="{% url 'myapp:customer_list_class' %}" class="manage-btn"
+      >Manage Customers</a
+    >
+    <a href="{% url 'myapp:product_list' %}" class="manage-btn"
+      >Manage Products</a
+    >
+  </section>
 </div>
 
 {% endblock %}

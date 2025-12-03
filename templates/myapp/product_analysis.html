@@ -1,0 +1,335 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Product Analysis - Django Traders{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/manager_dashboard.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <div>
+      <h1><i class="bi bi-box-seam"></i> Product Sales Analysis</h1>
+      <p class="subtitle">Detailed product performance metrics</p>
+    </div>
+    <nav class="breadcrumb-nav">
+      <a href="{% url 'myapp:home' %}">Home</a> &gt; 
+      <a href="{% url 'myapp:manager_dashboard' %}">Dashboard</a> &gt; Product Analysis
+    </nav>
+  </div>
+
+  <!-- Quick Navigation -->
+  <div class="quick-nav">
+    <a href="{% url 'myapp:manager_dashboard' %}" class="nav-card">
+      <i class="bi bi-speedometer2"></i>
+      <span>Dashboard</span>
+    </a>
+    <a href="{% url 'myapp:product_analysis' %}" class="nav-card active">
+      <i class="bi bi-box-seam"></i>
+      <span>Product Analysis</span>
+    </a>
+    <a href="{% url 'myapp:category_analysis' %}" class="nav-card">
+      <i class="bi bi-grid-3x3"></i>
+      <span>Category Analysis</span>
+    </a>
+  </div>
+
+  <!-- Top 10 Products Analysis -->
+  <div class="chart-section">
+    <div class="chart-header">
+      <h2><i class="bi bi-trophy"></i> Top 10 Most Bought Products</h2>
+      <p>{% if selected_year %}{{ selected_year }}{% else %}All Years{% endif %}</p>
+    </div>
+    <div class="chart-container" style="height: 500px;">
+      <canvas id="topProductsChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Product Selection Filter -->
+  <div class="filter-section">
+    <form method="get" class="filter-form">
+      <div class="filter-group">
+        <label for="product"><i class="bi bi-box"></i> Select Product</label>
+        <select name="product" id="product" class="form-select" onchange="this.form.submit()">
+          <option value="">-- Choose a product --</option>
+          {% for prod in products %}
+          <option value="{{ prod.product_id }}" {% if prod.product_id|stringformat:"s" == selected_product %}selected{% endif %}>
+            {{ prod.product_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if selected_product %}
+      <div class="filter-group">
+        <label for="year"><i class="bi bi-calendar"></i> Year</label>
+        <select name="year" id="year" class="form-select" onchange="this.form.submit()">
+          <option value="">All Years</option>
+          {% for year in years %}
+          <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>
+            {{ year }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <a href="{% url 'myapp:product_analysis' %}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-x-circle"></i> Clear
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if product %}
+  <!-- Product Summary -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon orders">
+        <i class="bi bi-cart-check"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Total Orders</div>
+        <div class="kpi-value">{{ summary.total_orders|default:0 }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon products">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Units Sold</div>
+        <div class="kpi-value">{{ summary.total_quantity|default:0 }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon revenue">
+        <i class="bi bi-currency-dollar"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value">${{ summary.total_revenue|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon average">
+        <i class="bi bi-graph-up"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Avg per Order</div>
+        <div class="kpi-value">{{ summary.avg_quantity_per_order|floatformat:1|default:"0.0" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Sales Trend -->
+  <div class="chart-section">
+    <div class="chart-header">
+      <h2><i class="bi bi-graph-up-arrow"></i> {{ product.product_name }} - Monthly Sales</h2>
+      <p>Revenue and quantity trend over time</p>
+    </div>
+    <div class="chart-container">
+      <canvas id="productTrendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Monthly Data Table -->
+  {% if monthly_sales %}
+  <div class="analysis-section">
+    <div class="section-header">
+      <h2><i class="bi bi-table"></i> Monthly Breakdown</h2>
+    </div>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Orders</th>
+            <th>Quantity</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in monthly_sales %}
+          <tr>
+            <td><strong>{{ sale.month|date:"M Y" }}</strong></td>
+            <td class="text-center">{{ sale.orders }}</td>
+            <td class="text-center">{{ sale.quantity }}</td>
+            <td class="revenue-cell">${{ sale.revenue|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <!-- No Product Selected -->
+  <div class="empty-state" style="padding: 80px 24px;">
+    <i class="bi bi-search"></i>
+    <p>Select a product above to view detailed analysis</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Top 10 Products Chart -->
+<script>
+  // Data for top products
+  const topProductsData = {% if selected_year and top_products_year_json %}{{ top_products_year_json|safe }}{% else %}{{ top_products_all_json|safe }}{% endif %};
+  
+  if (topProductsData && topProductsData.length > 0) {
+    const topProductLabels = topProductsData.map(p => p.product__product_name);
+    const topProductQuantities = topProductsData.map(p => p.total_quantity);
+    const topProductRevenues = topProductsData.map(p => p.total_revenue);
+
+    const topProductsCtx = document.getElementById('topProductsChart');
+    if (topProductsCtx) {
+      new Chart(topProductsCtx, {
+        type: 'bar',
+        data: {
+          labels: topProductLabels,
+          datasets: [{
+            label: 'Units Sold',
+            data: topProductQuantities,
+            backgroundColor: 'rgba(0, 113, 227, 0.8)',
+            borderRadius: 8,
+            yAxisID: 'y'
+          }, {
+            label: 'Revenue ($)',
+            data: topProductRevenues,
+            backgroundColor: 'rgba(52, 199, 89, 0.8)',
+            borderRadius: 8,
+            yAxisID: 'y1'
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) {
+                    label += ': ';
+                  }
+                  if (context.datasetIndex === 1) {
+                    label += '$' + context.parsed.x.toLocaleString();
+                  } else {
+                    label += context.parsed.x.toLocaleString();
+                  }
+                  return label;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            },
+            y1: {
+              beginAtZero: true,
+              position: 'top',
+              grid: {
+                drawOnChartArea: false
+              },
+              ticks: {
+                callback: function(value) {
+                  return '$' + value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  } else {
+    console.error('No top products data available');
+  }
+</script>
+
+{% if product and monthly_sales %}
+<script>
+  const monthLabels = [
+    {% for sale in monthly_sales %}
+    "{{ sale.month|date:'M Y' }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const monthRevenue = [
+    {% for sale in monthly_sales %}
+    {{ sale.revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const monthQuantity = [
+    {% for sale in monthly_sales %}
+    {{ sale.quantity|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  const ctx = document.getElementById('productTrendChart');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: monthLabels,
+      datasets: [{
+        label: 'Revenue ($)',
+        data: monthRevenue,
+        borderColor: '#0071e3',
+        backgroundColor: 'rgba(0, 113, 227, 0.1)',
+        tension: 0.4,
+        fill: true,
+        yAxisID: 'y'
+      }, {
+        label: 'Quantity',
+        data: monthQuantity,
+        borderColor: '#34c759',
+        backgroundColor: 'rgba(52, 199, 89, 0.1)',
+        tension: 0.4,
+        fill: true,
+        yAxisID: 'y1'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          position: 'left',
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toLocaleString();
+            }
+          }
+        },
+        y1: {
+          beginAtZero: true,
+          position: 'right',
+          grid: {
+            drawOnChartArea: false
+          }
+        }
+      }
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

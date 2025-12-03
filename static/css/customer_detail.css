@@ -1,4 +1,4 @@
-/* Customer Detail Page Styles */
+/* Customer Detail Page Styles - Clean & Minimal */
 
 .customer-detail-container {
   max-width: 1200px;
@@ -7,9 +7,9 @@
 }
 
 .page-header {
-  border-bottom: 2px solid #eee;
-  padding-bottom: 20px;
-  margin-bottom: 30px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 30px;
+  margin-bottom: 40px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -22,80 +22,91 @@
 
 .btn {
   display: inline-block;
-  padding: 8px 16px;
+  padding: 12px 22px;
   text-decoration: none;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border-radius: 980px;
+  font-size: 17px;
+  letter-spacing: -0.022em;
   cursor: pointer;
   border: none;
-  transition: background-color 0.2s;
+  transition: background 0.3s ease;
+  font-weight: 400;
 }
 
 .btn-primary {
-  background: #007bff;
+  background: #0071e3;
   color: white;
 }
 
 .btn-primary:hover {
-  background: #0056b3;
+  background: #0077ed;
   color: white;
   text-decoration: none;
 }
 
 .btn-secondary {
-  background: #6c757d;
-  color: white;
+  background: transparent;
+  border: 1px solid #d2d2d7;
+  color: #1d1d1f;
 }
 
 .btn-secondary:hover {
-  background: #545b62;
-  color: white;
+  background: #f5f5f7;
+  color: #1d1d1f;
   text-decoration: none;
 }
 
 .page-title {
-  font-size: 2rem;
-  color: #333;
-  margin-bottom: 10px;
+  font-size: 64px;
+  line-height: 1.0625;
+  font-weight: 600;
+  letter-spacing: -0.009em;
+  color: #1d1d1f;
+  margin-bottom: 20px;
 }
 
 .breadcrumb-nav {
-  color: #666;
-  font-size: 0.9rem;
+  color: #6e6e73;
+  font-size: 14px;
+  letter-spacing: -0.01em;
 }
 
 .breadcrumb-nav a {
-  color: #007bff;
+  color: #0071e3;
   text-decoration: none;
+  transition: opacity 0.3s ease;
 }
 
 .breadcrumb-nav a:hover {
-  text-decoration: underline;
+  opacity: 0.6;
+  text-decoration: none;
 }
 
-/* Customer Card */
+/* Customer Card - Clean & Minimal */
 .customer-card {
   background: white;
-  border-radius: 8px;
-  padding: 30px;
+  border-radius: 18px;
+  padding: 40px;
   margin-bottom: 30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #ddd;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-/* Customer Header */
+/* Customer Header - Clean & Minimal */
 .customer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .customer-name {
-  font-size: 1.8rem;
-  color: #333;
+  font-size: 32px;
+  line-height: 1.125;
+  font-weight: 600;
+  letter-spacing: -0.003em;
+  color: #1d1d1f;
   margin: 0;
 }
 
@@ -316,126 +327,236 @@
 
 /* Place Order Button */
 .btn-success {
-    background-color: #28a745;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.3s;
+  background-color: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
 }
 
 .btn-success:hover {
-    background-color: #218838;
+  background-color: #218838;
 }
 
 /* Order Badge */
 .badge {
-    background-color: #007bff;
-    color: white;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 0.85em;
-    font-weight: normal;
-    margin-left: 10px;
+  background-color: #007bff;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: normal;
+  margin-left: 10px;
 }
 
 /* Order Status Badges */
 .status-badge {
-    padding: 4px 12px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: 500;
 }
 
 .status-shipped {
-    background-color: #d4edda;
-    color: #155724;
+  background-color: #d4edda;
+  color: #155724;
 }
 
 .status-pending {
-    background-color: #fff3cd;
-    color: #856404;
+  background-color: #fff3cd;
+  color: #856404;
 }
 
 /* No Orders Message */
 .no-orders-message {
-    text-align: center;
-    padding: 40px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    margin-top: 20px;
+  text-align: center;
+  padding: 40px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 20px;
 }
 
 .no-orders-message p {
-    font-size: 1.1em;
-    color: #6c757d;
-    margin-bottom: 20px;
+  font-size: 1.1em;
+  color: #6c757d;
+  margin-bottom: 20px;
 }
 
 /* Orders Section */
 .orders-section {
-    margin-top: 30px;
+  margin-top: 30px;
 }
 
 .orders-section .section-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
 .orders-table-container {
-    overflow-x: auto;
+  overflow-x: auto;
 }
 
 .orders-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
 }
 
 .orders-table thead {
-    background-color: #f8f9fa;
+  background-color: #f8f9fa;
 }
 
 .orders-table th {
-    padding: 12px;
-    text-align: left;
-    font-weight: 600;
-    border-bottom: 2px solid #dee2e6;
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
 }
 
 .orders-table td {
-    padding: 12px;
-    border-bottom: 1px solid #dee2e6;
+  padding: 12px;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .orders-table tbody tr:hover {
-    background-color: #f8f9fa;
+  background-color: #f8f9fa;
 }
 
 .orders-table .btn-link {
-    color: #007bff;
-    text-decoration: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: background-color 0.3s;
+  color: #007bff;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
 }
 
 .orders-table .btn-link:hover {
-    background-color: #e7f3ff;
-    text-decoration: underline;
+  background-color: #e7f3ff;
+  text-decoration: underline;
 }
 
 /* Header Actions Adjustment */
 .header-actions {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .customer-detail-container {
+    padding: 10px;
+    margin: 10px auto;
+  }
+
+  .page-header {
+    flex-direction: column;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+  }
+
+  .page-title {
+    font-size: 36px;
+    margin-bottom: 15px;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 15px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .customer-card {
+    padding: 24px;
+  }
+
+  .customer-name {
+    font-size: 24px;
+  }
+
+  .customer-info-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .orders-table {
+    font-size: 14px;
+  }
+
+  .orders-table th,
+  .orders-table td {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 576px) {
+  .page-title {
+    font-size: 28px;
+  }
+
+  .breadcrumb-nav {
+    font-size: 13px;
+  }
+
+  .customer-card {
+    padding: 20px;
+  }
+
+  .customer-name {
+    font-size: 22px;
+  }
+
+  .customer-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .orders-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  .customer-detail-container {
+    padding: 8px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .customer-card {
+    padding: 16px;
+  }
+
+  .section-title {
+    font-size: 18px;
+  }
+
+  .info-label {
+    font-size: 12px;
+  }
+
+  .info-value {
+    font-size: 14px;
+  }
 }

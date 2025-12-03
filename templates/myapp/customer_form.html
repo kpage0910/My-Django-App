@@ -1,105 +1,161 @@
 {% extends 'base.html' %} {% load static %} {% block title %}{{ title }} -
 Django Traders{% endblock %} {% block extra_css %}
-<link href="{% static 'css/customer_detail.css' %}" rel="stylesheet" />
 <style>
   .form-container {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
-    background: white;
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 40px 20px;
+  }
+
+  .form-header {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #e5e5e7;
+  }
+
+  .form-header h2 {
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: -0.009em;
+    color: #1d1d1f;
+    margin-bottom: 12px;
+  }
+
+  .breadcrumb-nav {
+    color: #6e6e73;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+  }
+
+  .breadcrumb-nav a {
+    color: #0071e3 !important;
+    text-decoration: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .breadcrumb-nav a:hover {
+    opacity: 0.6 !important;
   }
 
   .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 24px;
   }
 
   .form-group label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
-    color: #333;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1d1d1f;
+    font-size: 14px;
+    letter-spacing: -0.01em;
   }
 
   .form-control {
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
+    padding: 12px 16px;
+    border: 1px solid #d2d2d7;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: all 0.2s ease;
+    background: #ffffff;
+    color: #1d1d1f;
   }
 
   .form-control:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    border-color: #0071e3;
+    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
   }
 
   .btn-group {
     display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
+    gap: 12px;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid #e5e5e7;
   }
 
   .btn {
-    padding: 0.75rem 1.5rem;
+    padding: 12px 22px;
     border: none;
-    border-radius: 5px;
-    font-size: 1rem;
+    border-radius: 980px;
+    font-size: 17px;
+    font-weight: 400;
+    letter-spacing: -0.022em;
     text-decoration: none;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
   }
 
   .btn-primary {
-    background-color: #007bff;
-    color: white;
+    background: #0071e3;
+    color: white !important;
   }
 
   .btn-primary:hover {
-    background-color: #0056b3;
+    background: #0077ed;
+    opacity: 1 !important;
   }
 
   .btn-secondary {
-    background-color: #6c757d;
-    color: white;
+    background: transparent;
+    border: 1px solid #d2d2d7;
+    color: #1d1d1f !important;
   }
 
   .btn-secondary:hover {
-    background-color: #545b62;
+    background: #f5f5f7;
+    opacity: 1 !important;
   }
 
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    gap: 24px;
   }
 
   .form-row-3 {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 1rem;
+    gap: 24px;
   }
 
   .error-list {
-    color: #dc3545;
-    margin: 0.5rem 0;
+    color: #ff3b30;
+    margin: 8px 0 0 0;
     list-style: none;
     padding: 0;
+    font-size: 13px;
   }
 
   .error-list li {
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    border-radius: 3px;
-    padding: 0.5rem;
-    margin-bottom: 0.25rem;
+    background: #fff5f5;
+    border: 1px solid #ffebee;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-top: 4px;
+  }
+
+  .required-note {
+    color: #6e6e73;
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .form-section {
+    margin-bottom: 32px;
+  }
+
+  .form-section-title {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #1d1d1f;
+    margin-bottom: 20px;
   }
 
   .required-field {
-    color: #dc3545;
+    color: #ff3b30;
   }
 
   @media (max-width: 768px) {
@@ -114,193 +170,192 @@ Django Traders{% endblock %} {% block extra_css %}
   }
 </style>
 {% endblock %} {% block content %}
-<div class="container mt-4">
-  <div class="form-container">
+<div class="form-container">
+  <div class="form-header">
     <h2>{{ title }}</h2>
-
-    {% if messages %} {% for message in messages %}
-    <div
-      class="alert alert-{{ message.tags }} alert-dismissible fade show"
-      role="alert"
-    >
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    {% endfor %} {% endif %}
-
-    <form method="post">
-      {% csrf_token %}
-
-      <!-- Customer ID and Company Name -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="{{ form.customer_id.id_for_label }}">
-            Customer ID <span class="required-field">*</span>
-          </label>
-          {{ form.customer_id }} {% if form.customer_id.errors %}
-          <ul class="error-list">
-            {% for error in form.customer_id.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-          <small class="form-text text-muted"
-            >5 characters, letters and numbers only</small
-          >
-        </div>
-
-        <div class="form-group">
-          <label for="{{ form.company_name.id_for_label }}">
-            Company Name <span class="required-field">*</span>
-          </label>
-          {{ form.company_name }} {% if form.company_name.errors %}
-          <ul class="error-list">
-            {% for error in form.company_name.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Contact Information -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="{{ form.contact_name.id_for_label }}">Contact Name</label>
-          {{ form.contact_name }} {% if form.contact_name.errors %}
-          <ul class="error-list">
-            {% for error in form.contact_name.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-
-        <div class="form-group">
-          <label for="{{ form.contact_title.id_for_label }}"
-            >Contact Title</label
-          >
-          {{ form.contact_title }} {% if form.contact_title.errors %}
-          <ul class="error-list">
-            {% for error in form.contact_title.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Address -->
-      <div class="form-group">
-        <label for="{{ form.address.id_for_label }}">Address</label>
-        {{ form.address }} {% if form.address.errors %}
-        <ul class="error-list">
-          {% for error in form.address.errors %}
-          <li>{{ error }}</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-      </div>
-
-      <!-- City, Region, Postal Code -->
-      <div class="form-row-3">
-        <div class="form-group">
-          <label for="{{ form.city.id_for_label }}">City</label>
-          {{ form.city }} {% if form.city.errors %}
-          <ul class="error-list">
-            {% for error in form.city.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-
-        <div class="form-group">
-          <label for="{{ form.region.id_for_label }}">Region/State</label>
-          {{ form.region }} {% if form.region.errors %}
-          <ul class="error-list">
-            {% for error in form.region.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-
-        <div class="form-group">
-          <label for="{{ form.postal_code.id_for_label }}">Postal Code</label>
-          {{ form.postal_code }} {% if form.postal_code.errors %}
-          <ul class="error-list">
-            {% for error in form.postal_code.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Country -->
-      <div class="form-group">
-        <label for="{{ form.country.id_for_label }}">Country</label>
-        {{ form.country }} {% if form.country.errors %}
-        <ul class="error-list">
-          {% for error in form.country.errors %}
-          <li>{{ error }}</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-      </div>
-
-      <!-- Phone and Fax -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="{{ form.phone.id_for_label }}">Phone</label>
-          {{ form.phone }} {% if form.phone.errors %}
-          <ul class="error-list">
-            {% for error in form.phone.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-
-        <div class="form-group">
-          <label for="{{ form.fax.id_for_label }}">Fax</label>
-          {{ form.fax }} {% if form.fax.errors %}
-          <ul class="error-list">
-            {% for error in form.fax.errors %}
-            <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Password -->
-      <div class="form-group">
-        <label for="{{ form.password.id_for_label }}">Password</label>
-        {{ form.password }} {% if form.password.errors %}
-        <ul class="error-list">
-          {% for error in form.password.errors %}
-          <li>{{ error }}</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-      </div>
-
-      <!-- Form Actions -->
-      <div class="btn-group">
-        <button type="submit" class="btn btn-primary">
-          {{ submit_text|default:"Save Customer" }}
-        </button>
-        <a
-          href="{% url 'myapp:customer_list_class' %}"
-          class="btn btn-secondary"
-        >
-          Cancel
-        </a>
-      </div>
-    </form>
+    <nav class="breadcrumb-nav">
+      <a href="{% url 'myapp:home' %}">Home</a> &gt;
+      <a href="{% url 'myapp:customer_list' %}">Customers</a> &gt; {{ title }}
+    </nav>
   </div>
+
+  {% if messages %} {% for message in messages %}
+  <div
+    class="alert alert-{{ message.tags }} alert-dismissible fade show"
+    role="alert"
+  >
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %} {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- Customer ID and Company Name -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="{{ form.customer_id.id_for_label }}">
+          Customer ID <span class="required-field">*</span>
+        </label>
+        {{ form.customer_id }} {% if form.customer_id.errors %}
+        <ul class="error-list">
+          {% for error in form.customer_id.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        <small class="form-text text-muted"
+          >5 characters, letters and numbers only</small
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.company_name.id_for_label }}">
+          Company Name <span class="required-field">*</span>
+        </label>
+        {{ form.company_name }} {% if form.company_name.errors %}
+        <ul class="error-list">
+          {% for error in form.company_name.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="{{ form.contact_name.id_for_label }}">Contact Name</label>
+        {{ form.contact_name }} {% if form.contact_name.errors %}
+        <ul class="error-list">
+          {% for error in form.contact_name.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.contact_title.id_for_label }}">Contact Title</label>
+        {{ form.contact_title }} {% if form.contact_title.errors %}
+        <ul class="error-list">
+          {% for error in form.contact_title.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Address -->
+    <div class="form-group">
+      <label for="{{ form.address.id_for_label }}">Address</label>
+      {{ form.address }} {% if form.address.errors %}
+      <ul class="error-list">
+        {% for error in form.address.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <!-- City, Region, Postal Code -->
+    <div class="form-row-3">
+      <div class="form-group">
+        <label for="{{ form.city.id_for_label }}">City</label>
+        {{ form.city }} {% if form.city.errors %}
+        <ul class="error-list">
+          {% for error in form.city.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.region.id_for_label }}">Region/State</label>
+        {{ form.region }} {% if form.region.errors %}
+        <ul class="error-list">
+          {% for error in form.region.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.postal_code.id_for_label }}">Postal Code</label>
+        {{ form.postal_code }} {% if form.postal_code.errors %}
+        <ul class="error-list">
+          {% for error in form.postal_code.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Country -->
+    <div class="form-group">
+      <label for="{{ form.country.id_for_label }}">Country</label>
+      {{ form.country }} {% if form.country.errors %}
+      <ul class="error-list">
+        {% for error in form.country.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <!-- Phone and Fax -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="{{ form.phone.id_for_label }}">Phone</label>
+        {{ form.phone }} {% if form.phone.errors %}
+        <ul class="error-list">
+          {% for error in form.phone.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.fax.id_for_label }}">Fax</label>
+        {{ form.fax }} {% if form.fax.errors %}
+        <ul class="error-list">
+          {% for error in form.fax.errors %}
+          <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Password -->
+    <div class="form-group">
+      <label for="{{ form.password.id_for_label }}">Password</label>
+      {{ form.password }} {% if form.password.errors %}
+      <ul class="error-list">
+        {% for error in form.password.errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <!-- Form Actions -->
+    <div class="btn-group">
+      <button type="submit" class="btn btn-primary">
+        {{ submit_text|default:"Save Customer" }}
+      </button>
+      <a href="{% url 'myapp:customer_list_class' %}" class="btn btn-secondary">
+        Cancel
+      </a>
+    </div>
+  </form>
 </div>
 {% endblock %} {% block extra_js %}
 <script>

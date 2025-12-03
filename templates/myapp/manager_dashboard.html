@@ -1,0 +1,1197 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manager Dashboard - Django Traders{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/manager_dashboard.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <div>
+      <h1><i class="bi bi-bar-chart-line"></i> Manager Analytics Dashboard</h1>
+      <p class="subtitle">Welcome, {{ employee.first_name }} {{ employee.last_name }}</p>
+    </div>
+    <nav class="breadcrumb-nav">
+      <a href="{% url 'myapp:home' %}">Home</a> &gt; Manager Dashboard
+    </nav>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <form method="get" class="filter-form">
+      <div class="filter-group">
+        <label for="year"><i class="bi bi-calendar"></i> Filter by Year</label>
+        <select name="year" id="year" class="form-select" onchange="this.form.submit()">
+          <option value="">All Years</option>
+          {% for year in years %}
+          <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>
+            {{ year }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if selected_year %}
+      <a href="{% url 'myapp:manager_dashboard' %}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-x-circle"></i> Clear Filters
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon orders">
+        <i class="bi bi-cart-check"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Total Orders</div>
+        <div class="kpi-value">{{ total_orders|default:0 }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon products">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Products Sold</div>
+        <div class="kpi-value">{{ total_products|default:0 }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon revenue">
+        <i class="bi bi-currency-dollar"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value">${{ total_revenue|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon average">
+        <i class="bi bi-graph-up"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Avg Order Value</div>
+        <div class="kpi-value">${{ avg_order_value|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon discount">
+        <i class="bi bi-percent"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Avg Discount</div>
+        <div class="kpi-value">{{ avg_discount|floatformat:1|default:"0.0" }}%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Annual Sales Overview Chart -->
+  <div class="chart-section">
+    <div class="chart-header">
+      <h2><i class="bi bi-graph-up-arrow"></i> Annual Sales Overview</h2>
+      <p>Yearly revenue and order trends across all years</p>
+    </div>
+    <div class="chart-container">
+      <canvas id="annualSalesChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Monthly Sales Breakdown Chart -->
+  <div class="chart-section">
+    <div class="chart-header">
+      <h2><i class="bi bi-calendar3"></i> Monthly Sales Breakdown</h2>
+      <p>{% if selected_year %}Monthly performance for {{ selected_year }}{% else %}Average monthly performance across all years{% endif %}</p>
+    </div>
+    <div class="chart-container">
+      <canvas id="monthlySalesChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Top 10 and Bottom 10 Products Grid -->
+  <div class="products-grid">
+    <!-- Top 10 Products -->
+    <div class="products-section top-section">
+      <div class="section-header">
+        <h2><i class="bi bi-trophy-fill"></i> Top 10 Products</h2>
+        <p>Highest revenue generators {% if selected_year %}for {{ selected_year }}{% else %}all time{% endif %}</p>
+      </div>
+      {% if top_products %}
+      <!-- Chart Visualization -->
+      <div class="chart-wrapper" style="height: 400px; margin-bottom: 25px;">
+        <canvas id="topProductsChart"></canvas>
+      </div>
+      <!-- Data Table -->
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Orders</th>
+              <th>Quantity</th>
+              <th>Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in top_products %}
+            <tr>
+              <td class="rank-cell">
+                <span class="rank-badge rank-{{ forloop.counter }}">{{ forloop.counter }}</span>
+              </td>
+              <td>
+                <a href="{% url 'myapp:product_detail' product.product__product_id %}">
+                  {{ product.product__product_name }}
+                </a>
+              </td>
+              <td>{{ product.product__category__category_name|default:"N/A" }}</td>
+              <td class="text-center">{{ product.order_count }}</td>
+              <td class="text-center">{{ product.total_quantity }}</td>
+              <td class="revenue-cell">${{ product.total_revenue|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>No product data available</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Bottom 10 Products -->
+    <div class="products-section bottom-section">
+      <div class="section-header">
+        <h2><i class="bi bi-arrow-down-circle"></i> Bottom 10 Products</h2>
+        <p>Lowest revenue generators {% if selected_year %}for {{ selected_year }}{% else %}all time{% endif %}</p>
+      </div>
+      {% if bottom_products %}
+      <!-- Chart Visualization -->
+      <div class="chart-wrapper" style="height: 400px; margin-bottom: 25px;">
+        <canvas id="bottomProductsChart"></canvas>
+      </div>
+      <!-- Data Table -->
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Orders</th>
+              <th>Quantity</th>
+              <th>Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in bottom_products %}
+            <tr>
+              <td class="text-center">{{ forloop.counter }}</td>
+              <td>
+                <a href="{% url 'myapp:product_detail' product.product__product_id %}">
+                  {{ product.product__product_name }}
+                </a>
+              </td>
+              <td>{{ product.product__category__category_name|default:"N/A" }}</td>
+              <td class="text-center">{{ product.order_count }}</td>
+              <td class="text-center">{{ product.total_quantity }}</td>
+              <td class="revenue-cell low">${{ product.total_revenue|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>No product data available</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Product Sales Analysis Section -->
+  <div class="product-analysis-section">
+    <div class="section-header">
+      <h2><i class="bi bi-graph-up"></i> Product Sales Analysis{% if selected_product %}: {{ product.product_name }}{% endif %}</h2>
+      <p>Detailed sales analysis for individual products{% if selected_year %} for {{ selected_year }}{% endif %}</p>
+    </div>
+
+    <!-- Product Filter -->
+    <div class="filter-section" style="margin-bottom: 25px;">
+      <form method="get" class="filter-form">
+        {% if selected_year %}
+        <input type="hidden" name="year" value="{{ selected_year }}">
+        {% endif %}
+        
+        <div class="filter-group">
+          <label for="product"><i class="bi bi-box-seam"></i> Select Product</label>
+          <select name="product" id="product" class="form-select" onchange="this.form.submit()">
+            <option value="">-- Select a Product --</option>
+            {% for prod in products %}
+            <option value="{{ prod.product_id }}" {% if prod.product_id|stringformat:"s" == selected_product %}selected{% endif %}>
+              {{ prod.product_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% if selected_product %}
+        <a href="{% url 'myapp:manager_dashboard' %}{% if selected_year %}?year={{ selected_year }}{% endif %}" class="btn btn-secondary btn-sm">
+          <i class="bi bi-x-circle"></i> Clear Product
+        </a>
+        {% endif %}
+      </form>
+    </div>
+
+    {% if selected_product %}
+    <!-- Product Summary KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon orders">
+          <i class="bi bi-cart-check"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">Total Orders</div>
+          <div class="kpi-value">{{ product_summary.total_orders|default:0 }}</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon products">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">Units Sold</div>
+          <div class="kpi-value">{{ product_summary.total_quantity|default:0 }}</div>
+          <div class="kpi-subtitle">Avg: {{ all_products_avg.avg_quantity|floatformat:1 }} units/order</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon revenue">
+          <i class="bi bi-currency-dollar"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">Total Revenue</div>
+          <div class="kpi-value">${{ product_summary.total_revenue|floatformat:2|default:"0.00" }}</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon average">
+          <i class="bi bi-graph-up"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">Avg per Order</div>
+          <div class="kpi-value">{{ product_summary.avg_quantity_per_order|floatformat:1|default:"0.0" }}</div>
+          <div class="kpi-subtitle">All products avg: {{ all_products_avg.avg_quantity|floatformat:1 }}</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon discount">
+          <i class="bi bi-percent"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">Avg Discount</div>
+          <div class="kpi-value">{{ product_summary.avg_discount|floatformat:1|default:"0.0" }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Sales Trend Chart -->
+    {% if product_monthly_sales %}
+    <div class="chart-section">
+      <div class="chart-header">
+        <h3><i class="bi bi-graph-up-arrow"></i> Monthly Sales Trend</h3>
+        <p>Monthly performance breakdown for {{ product.product_name }}</p>
+      </div>
+      <div class="chart-container" style="height: 400px;">
+        <canvas id="productMonthlySalesChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Monthly Breakdown Table -->
+    <div class="table-responsive" style="margin-top: 25px;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Orders</th>
+            <th>Quantity</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in product_monthly_sales %}
+          <tr>
+            <td><strong>{{ sale.month|date:"F Y" }}</strong></td>
+            <td class="text-center">{{ sale.orders }}</td>
+            <td class="text-center">{{ sale.quantity }}</td>
+            <td class="revenue-cell">${{ sale.revenue|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-inbox"></i>
+      <p>No monthly sales data available for this product</p>
+    </div>
+    {% endif %}
+
+    <!-- Comparison with Averages Chart -->
+    <div class="chart-section" style="margin-top: 30px;">
+      <div class="chart-header">
+        <h3><i class="bi bi-bar-chart"></i> Comparison with All Products Average</h3>
+        <p>How {{ product.product_name }} performs against overall averages</p>
+      </div>
+      <div class="chart-container" style="height: 350px;">
+        <canvas id="productComparisonChart"></canvas>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state" style="margin-top: 30px;">
+      <i class="bi bi-box-seam" style="font-size: 48px; color: #ccc;"></i>
+      <p style="margin-top: 15px;">Select a product from the filter above to view detailed product sales analysis</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Category Sales Analysis -->
+  <div class="category-section">
+    <div class="section-header">
+      <h2><i class="bi bi-pie-chart-fill"></i> Category Sales Analysis</h2>
+      <p>Sales breakdown by product category {% if selected_year %}for {{ selected_year }}{% else %}all time{% endif %}</p>
+    </div>
+    <div class="category-chart-grid">
+      <div class="chart-container" style="height: 400px;">
+        <canvas id="categoryRevenueChart"></canvas>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Products</th>
+              <th>Orders</th>
+              <th>Quantity</th>
+              <th>Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for category in category_performance %}
+            <tr>
+              <td><strong>{{ category.product__category__category_name|default:"Uncategorized" }}</strong></td>
+              <td class="text-center">{{ category.product_count }}</td>
+              <td class="text-center">{{ category.order_count }}</td>
+              <td class="text-center">{{ category.total_quantity }}</td>
+              <td class="revenue-cell">${{ category.total_revenue|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // ===== 1. ANNUAL SALES OVERVIEW CHART =====
+  // Bar chart showing yearly revenue and order trends
+  const annualLabels = [
+    {% for sale in yearly_sales %}
+    "{{ sale.year|date:'Y' }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const annualRevenue = [
+    {% for sale in yearly_sales %}
+    {{ sale.revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const annualOrders = [
+    {% for sale in yearly_sales %}
+    {{ sale.orders|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  const ctx1 = document.getElementById('annualSalesChart');
+  new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: annualLabels,
+      datasets: [
+        {
+          label: 'Revenue ($)',
+          data: annualRevenue,
+          backgroundColor: 'rgba(0, 113, 227, 0.8)',
+          borderColor: 'rgba(0, 113, 227, 1)',
+          borderWidth: 2,
+          borderRadius: 8,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Number of Orders',
+          data: annualOrders,
+          backgroundColor: 'rgba(52, 199, 89, 0.8)',
+          borderColor: 'rgba(52, 199, 89, 1)',
+          borderWidth: 2,
+          borderRadius: 8,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+            font: {
+              size: 13
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.dataset.yAxisID === 'y') {
+                label += '$' + parseFloat(context.parsed.y).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+              } else {
+                label += context.parsed.y.toLocaleString('en-US');
+              }
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          type: 'linear',
+          position: 'left',
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Revenue ($)',
+            font: {
+              size: 13,
+              weight: 'bold'
+            }
+          },
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toLocaleString();
+            }
+          }
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Orders',
+            font: {
+              size: 13,
+              weight: 'bold'
+            }
+          },
+          grid: {
+            drawOnChartArea: false
+          },
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ===== 2. MONTHLY SALES BREAKDOWN CHART =====
+  // Line chart showing monthly trends
+  {% if selected_year and monthly_sales %}
+  // Monthly data for selected year
+  const monthlyLabels = [
+    {% for sale in monthly_sales %}
+    "{{ sale.month|date:'M Y' }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const monthlyRevenue = [
+    {% for sale in monthly_sales %}
+    {{ sale.revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const monthlyOrders = [
+    {% for sale in monthly_sales %}
+    {{ sale.orders|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const monthlyProducts = [
+    {% for sale in monthly_sales %}
+    {{ sale.products|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  {% else %}
+  // Average monthly data across all years
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthlyData = {
+    {% for sale in monthly_sales_all %}
+    {{ sale.month_num }}: {
+      revenue: {{ sale.revenue|default:0 }},
+      orders: {{ sale.orders|default:0 }},
+      products: {{ sale.products|default:0 }}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  };
+  const monthlyLabels = monthNames;
+  const monthlyRevenue = monthNames.map((m, i) => monthlyData[i+1]?.revenue || 0);
+  const monthlyOrders = monthNames.map((m, i) => monthlyData[i+1]?.orders || 0);
+  const monthlyProducts = monthNames.map((m, i) => monthlyData[i+1]?.products || 0);
+  {% endif %}
+
+  const ctx2 = document.getElementById('monthlySalesChart');
+  new Chart(ctx2, {
+    type: 'line',
+    data: {
+      labels: monthlyLabels,
+      datasets: [
+        {
+          label: 'Revenue ($)',
+          data: monthlyRevenue,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.1)',
+          yAxisID: 'y',
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 3,
+          fill: true
+        },
+        {
+          label: 'Number of Orders',
+          data: monthlyOrders,
+          borderColor: 'rgb(54, 162, 235)',
+          backgroundColor: 'rgba(54, 162, 235, 0.1)',
+          yAxisID: 'y1',
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2,
+          fill: false
+        },
+        {
+          label: 'Products Sold',
+          data: monthlyProducts,
+          borderColor: 'rgb(255, 159, 64)',
+          backgroundColor: 'rgba(255, 159, 64, 0.1)',
+          yAxisID: 'y1',
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+            font: {
+              size: 13
+            }
+          }
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.dataset.yAxisID === 'y') {
+                label += '$' + parseFloat(context.parsed.y).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+              } else {
+                label += context.parsed.y.toLocaleString('en-US');
+              }
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          type: 'linear',
+          position: 'left',
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Revenue ($)',
+            font: {
+              size: 13,
+              weight: 'bold'
+            }
+          },
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toLocaleString();
+            }
+          }
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Orders / Products',
+            font: {
+              size: 13,
+              weight: 'bold'
+            }
+          },
+          grid: {
+            drawOnChartArea: false
+          },
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ===== 3. TOP 10 PRODUCTS CHART =====
+  // Horizontal bar chart showing top revenue products
+  {% if top_products %}
+  const topProductLabels = [
+    {% for product in top_products %}
+    "{{ product.product__product_name|truncatechars:30 }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const topProductRevenue = [
+    {% for product in top_products %}
+    {{ product.total_revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const topProductQuantity = [
+    {% for product in top_products %}
+    {{ product.total_quantity|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  // Create gradient colors for top products (green to blue)
+  const topProductColors = topProductLabels.map((_, index) => {
+    const hue = 200 - (index * 15); // Blue to cyan gradient
+    return `hsl(${hue}, 70%, 55%)`;
+  });
+
+  const ctx3 = document.getElementById('topProductsChart');
+  new Chart(ctx3, {
+    type: 'bar',
+    data: {
+      labels: topProductLabels,
+      datasets: [{
+        label: 'Revenue ($)',
+        data: topProductRevenue,
+        backgroundColor: topProductColors,
+        borderColor: topProductColors.map(c => c.replace('55%', '45%')),
+        borderWidth: 2,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const index = context.dataIndex;
+              return [
+                `Revenue: $${topProductRevenue[index].toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+                `Quantity: ${topProductQuantity[index].toLocaleString()} units`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Revenue ($)'
+          },
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toLocaleString();
+            }
+          }
+        },
+        y: {
+          title: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+  {% endif %}
+
+  // ===== 4. BOTTOM 10 PRODUCTS CHART =====
+  // Horizontal bar chart showing lowest revenue products
+  {% if bottom_products %}
+  const bottomProductLabels = [
+    {% for product in bottom_products %}
+    "{{ product.product__product_name|truncatechars:30 }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const bottomProductRevenue = [
+    {% for product in bottom_products %}
+    {{ product.total_revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const bottomProductQuantity = [
+    {% for product in bottom_products %}
+    {{ product.total_quantity|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  // Create gradient colors for bottom products (red to orange)
+  const bottomProductColors = bottomProductLabels.map((_, index) => {
+    const hue = 0 + (index * 5); // Red to orange gradient
+    return `hsl(${hue}, 70%, 55%)`;
+  });
+
+  const ctx4 = document.getElementById('bottomProductsChart');
+  new Chart(ctx4, {
+    type: 'bar',
+    data: {
+      labels: bottomProductLabels,
+      datasets: [{
+        label: 'Revenue ($)',
+        data: bottomProductRevenue,
+        backgroundColor: bottomProductColors,
+        borderColor: bottomProductColors.map(c => c.replace('55%', '45%')),
+        borderWidth: 2,
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const index = context.dataIndex;
+              return [
+                `Revenue: $${bottomProductRevenue[index].toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+                `Quantity: ${bottomProductQuantity[index].toLocaleString()} units`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Revenue ($)'
+          },
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toLocaleString();
+            }
+          }
+        },
+        y: {
+          title: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+  {% endif %}
+
+  // ===== 5. CATEGORY SALES ANALYSIS CHART =====
+  // Doughnut chart showing category revenue distribution
+  {% if category_performance %}
+  const catLabels = [
+    {% for cat in category_performance|slice:":10" %}
+    "{{ cat.product__category__category_name|default:'Uncategorized' }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const catRevenue = [
+    {% for cat in category_performance|slice:":10" %}
+    {{ cat.total_revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const catQuantity = [
+    {% for cat in category_performance|slice:":10" %}
+    {{ cat.total_quantity|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  const ctx5 = document.getElementById('categoryRevenueChart');
+  new Chart(ctx5, {
+    type: 'doughnut',
+    data: {
+      labels: catLabels,
+      datasets: [{
+        label: 'Revenue',
+        data: catRevenue,
+        backgroundColor: [
+          '#0071e3', '#34c759', '#ff9500', '#ff3b30',
+          '#5856d6', '#00c7be', '#ff2d55', '#af52de',
+          '#64d2ff', '#30b0c7'
+        ],
+        borderColor: '#fff',
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            padding: 15,
+            font: {
+              size: 12
+            },
+            generateLabels: function(chart) {
+              const data = chart.data;
+              if (data.labels.length && data.datasets.length) {
+                return data.labels.map((label, i) => {
+                  const value = data.datasets[0].data[i];
+                  const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                  const percentage = ((value / total) * 100).toFixed(1);
+                  return {
+                    text: `${label} (${percentage}%)`,
+                    fillStyle: data.datasets[0].backgroundColor[i],
+                    hidden: false,
+                    index: i
+                  };
+                });
+              }
+              return [];
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const index = context.dataIndex;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((context.parsed / total) * 100).toFixed(1);
+              return [
+                `Revenue: $${catRevenue[index].toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+                `Percentage: ${percentage}%`,
+                `Quantity: ${catQuantity[index].toLocaleString()} units`
+              ];
+            }
+          }
+        }
+      }
+    }
+  });
+  {% endif %}
+
+  // ===== 6. PRODUCT MONTHLY SALES CHART =====
+  // Line chart showing monthly sales for selected product
+  {% if selected_product and product_monthly_sales %}
+  const productMonthlyLabels = [
+    {% for sale in product_monthly_sales %}
+    "{{ sale.month|date:'M Y' }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const productMonthlyRevenue = [
+    {% for sale in product_monthly_sales %}
+    {{ sale.revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const productMonthlyQuantity = [
+    {% for sale in product_monthly_sales %}
+    {{ sale.quantity|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  const ctx6 = document.getElementById('productMonthlySalesChart');
+  new Chart(ctx6, {
+    type: 'line',
+    data: {
+      labels: productMonthlyLabels,
+      datasets: [
+        {
+          label: 'Revenue ($)',
+          data: productMonthlyRevenue,
+          backgroundColor: 'rgba(0, 113, 227, 0.1)',
+          borderColor: 'rgba(0, 113, 227, 1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Quantity Sold',
+          data: productMonthlyQuantity,
+          backgroundColor: 'rgba(52, 199, 89, 0.1)',
+          borderColor: 'rgba(52, 199, 89, 1)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            padding: 20,
+            usePointStyle: true,
+            font: {
+              size: 13
+            }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          titleFont: {
+            size: 14
+          },
+          bodyFont: {
+            size: 13
+          },
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.datasetIndex === 0) {
+                label += '$' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+              } else {
+                label += context.parsed.y.toLocaleString() + ' units';
+              }
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Revenue ($)',
+            font: {
+              size: 13
+            }
+          },
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toLocaleString();
+            }
+          }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Quantity Sold',
+            font: {
+              size: 13
+            }
+          },
+          grid: {
+            drawOnChartArea: false
+          },
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+  {% endif %}
+
+  // ===== 7. PRODUCT COMPARISON CHART =====
+  // Bar chart comparing selected product with all products average
+  {% if selected_product and product_summary %}
+  const ctx7 = document.getElementById('productComparisonChart');
+  new Chart(ctx7, {
+    type: 'bar',
+    data: {
+      labels: ['Avg Quantity per Order', 'Avg Revenue per Line'],
+      datasets: [
+        {
+          label: '{{ product.product_name }}',
+          data: [
+            {{ product_summary.avg_quantity_per_order|default:0 }},
+            {% if product_summary.total_orders %}{{ product_summary.total_revenue|floatformat:2 }}/{{ product_summary.total_orders }}{% else %}0{% endif %}
+          ],
+          backgroundColor: 'rgba(0, 113, 227, 0.7)',
+          borderColor: 'rgba(0, 113, 227, 1)',
+          borderWidth: 2
+        },
+        {
+          label: 'All Products Average',
+          data: [
+            {{ all_products_avg.avg_quantity|default:0 }},
+            {{ all_products_avg.avg_revenue_per_line|default:0 }}
+          ],
+          backgroundColor: 'rgba(88, 86, 214, 0.7)',
+          borderColor: 'rgba(88, 86, 214, 1)',
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            padding: 15,
+            usePointStyle: true,
+            font: {
+              size: 13
+            }
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          titleFont: {
+            size: 14
+          },
+          bodyFont: {
+            size: 13
+          },
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.dataIndex === 0) {
+                label += context.parsed.y.toFixed(2) + ' units';
+              } else {
+                label += '$' + context.parsed.y.toFixed(2);
+              }
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value, index, values) {
+              // Format differently based on which metric we're showing
+              return value.toFixed(2);
+            }
+          },
+          title: {
+            display: true,
+            text: 'Value',
+            font: {
+              size: 13
+            }
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+  {% endif %}
+</script>
+{% endblock %}

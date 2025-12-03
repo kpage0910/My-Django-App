@@ -12,7 +12,14 @@
 <div class="customer-detail-container">
   <!-- Page Header -->
   <div class="page-header">
-    <h1 class="page-title">Customer Details</h1>
+    <div>
+      <h1 class="page-title">Customer Details</h1>
+      <nav class="breadcrumb-nav">
+        <a href="{% url 'myapp:home' %}">Home</a> >
+        <a href="{% url 'myapp:customer_list_class' %}">Customers</a> >
+        {{ customer.company_name }}
+      </nav>
+    </div>
     <div class="header-actions">
       <a
         href="{% url 'myapp:customer_edit' customer.customer_id %}"
@@ -21,11 +28,6 @@
         <i class="fas fa-edit"></i> Edit Customer
       </a>
     </div>
-    <nav class="breadcrumb-nav">
-      <a href="{% url 'myapp:home' %}">Home</a> >
-      <a href="{% url 'myapp:customer_list_class' %}">Customers</a> >
-      {{ customer.company_name }}
-    </nav>
   </div>
 
   <!-- Customer Information Card -->

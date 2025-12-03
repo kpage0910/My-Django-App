@@ -1,0 +1,674 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Dashboard - Django Traders{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/customer_dashboard.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <div>
+      <h1><i class="bi bi-speedometer2"></i> My Sales Dashboard</h1>
+      <p class="subtitle">{{ customer.company_name }} ({{ customer.customer_id }})</p>
+    </div>
+    <nav class="breadcrumb-nav">
+      <a href="{% url 'myapp:home' %}">Home</a> &gt; Dashboard
+    </nav>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <form method="get" class="filter-form">
+      <div class="filter-group">
+        <label for="year"><i class="bi bi-calendar"></i> Year</label>
+        <select name="year" id="year" class="form-select" onchange="this.form.submit()">
+          <option value="">All Years</option>
+          {% for year in years %}
+          <option value="{{ year }}" {% if year|stringformat:"s" == selected_year %}selected{% endif %}>
+            {{ year }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if selected_year and months %}
+      <div class="filter-group">
+        <label for="month"><i class="bi bi-calendar-month"></i> Month</label>
+        <select name="month" id="month" class="form-select" onchange="this.form.submit()">
+          <option value="">All Months</option>
+          {% for month_num, month_name in months %}
+          <option value="{{ month_num }}" {% if month_num|stringformat:"s" == selected_month %}selected{% endif %}>
+            {{ month_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      {% if selected_year or selected_month %}
+      <a href="{% url 'myapp:customer_dashboard' %}" class="btn btn-secondary btn-sm">
+        <i class="bi bi-x-circle"></i> Clear Filters
+      </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon orders">
+        <i class="bi bi-cart-check"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Total Orders</div>
+        <div class="kpi-value">{{ total_orders|default:0 }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon products">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Products Purchased</div>
+        <div class="kpi-value">{{ total_products|default:0 }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon revenue">
+        <i class="bi bi-currency-dollar"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-value">${{ total_revenue|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon average">
+        <i class="bi bi-graph-up"></i>
+      </div>
+      <div class="kpi-content">
+        <div class="kpi-label">Avg Order Value</div>
+        <div class="kpi-value">${{ avg_order_value|floatformat:2|default:"0.00" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sales Trend Chart -->
+  <div class="chart-section">
+    <div class="chart-header">
+      <h2><i class="bi bi-graph-up-arrow"></i> Sales Trend</h2>
+      <p>{% if selected_year %}Monthly sales for {{ selected_year }}{% else %}Annual sales overview{% endif %}</p>
+    </div>
+    <div class="chart-container">
+      <canvas id="salesTrendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Two Column Layout for Top Products and Categories -->
+  <div class="analysis-grid">
+    <!-- Top Products -->
+    <div class="analysis-section">
+      <div class="section-header">
+        <h2><i class="bi bi-trophy"></i> Top 10 Products</h2>
+        <p>{% if selected_year %}for {{ selected_year }}{% else %}All Time{% endif %}</p>
+      </div>
+      {% if top_products %}
+      <!-- Chart Visualization -->
+      <div class="chart-wrapper" style="height: 400px; margin-bottom: 25px;">
+        <canvas id="topProductsChart"></canvas>
+      </div>
+      <!-- Data Table -->
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th>Quantity</th>
+              <th>Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for product in top_products %}
+            <tr>
+              <td class="rank-cell">
+                <span class="rank-badge rank-{{ forloop.counter }}">{{ forloop.counter }}</span>
+              </td>
+              <td>
+                <a href="{% url 'myapp:product_detail' product.product__product_id %}">
+                  {{ product.product__product_name }}
+                </a>
+              </td>
+              <td class="text-center">{{ product.total_quantity }}</td>
+              <td class="revenue-cell">${{ product.total_revenue|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>No product data available</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Top Categories -->
+    <div class="analysis-section">
+      <div class="section-header">
+        <h2><i class="bi bi-star"></i> Top 10 Categories</h2>
+        <p>{% if selected_year %}for {{ selected_year }}{% else %}All Time{% endif %}</p>
+      </div>
+      {% if top_categories %}
+      <!-- Chart Visualization -->
+      <div class="chart-wrapper" style="height: 400px; margin-bottom: 25px;">
+        <canvas id="topCategoriesChart"></canvas>
+      </div>
+      <!-- Data Table -->
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Category</th>
+              <th>Quantity</th>
+              <th>Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for category in top_categories %}
+            <tr>
+              <td class="rank-cell">
+                <span class="rank-badge">{{ forloop.counter }}</span>
+              </td>
+              <td>{{ category.product__category__category_name|default:"Uncategorized" }}</td>
+              <td class="text-center">{{ category.total_quantity }}</td>
+              <td class="revenue-cell">${{ category.total_revenue|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <p>No category data available</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Orders -->
+  <div class="recent-orders-section">
+    <div class="section-header">
+      <h2><i class="bi bi-clock-history"></i> Recent Orders</h2>
+    </div>
+    {% if recent_orders %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Date</th>
+            <th>Employee</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in recent_orders %}
+          <tr>
+            <td><strong>#{{ order.order_id }}</strong></td>
+            <td>{{ order.order_date|date:"M d, Y" }}</td>
+            <td>{{ order.employee.first_name }} {{ order.employee.last_name }}</td>
+            <td>
+              {% if order.shipped_date %}
+              <span class="status-badge shipped">Shipped</span>
+              {% else %}
+              <span class="status-badge pending">Pending</span>
+              {% endif %}
+            </td>
+            <td class="revenue-cell">${{ order.order_total|floatformat:2 }}</td>
+            <td>
+              <a href="{% url 'myapp:order_detail' order.order_id %}" class="btn-view">
+                <i class="bi bi-eye"></i> View
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-inbox"></i>
+      <p>No recent orders</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Product Recommendations -->
+  <div class="recommendations-section">
+    <div class="section-header">
+      <h2><i class="bi bi-lightbulb"></i> Recommended for You</h2>
+      <p>Based on your purchasing patterns</p>
+    </div>
+    {% if recommended_products %}
+    <div class="recommendations-grid">
+      {% for product in recommended_products %}
+      <div class="product-card">
+        <div class="product-image-placeholder">
+          <i class="bi bi-box-seam"></i>
+        </div>
+        <div class="product-info">
+          <h3 class="product-name">
+            <a href="{% url 'myapp:product_detail' product.product_id %}">
+              {{ product.product_name }}
+            </a>
+          </h3>
+          <p class="product-category">
+            <i class="bi bi-tag"></i> {{ product.category.category_name|default:"Uncategorized" }}
+          </p>
+          <div class="product-price">
+            ${{ product.unit_price|floatformat:2 }}
+          </div>
+          {% if product.purchase_count %}
+          <p class="recommendation-reason">
+            <i class="bi bi-people"></i> {{ product.purchase_count }} customer{{ product.purchase_count|pluralize }} bought this
+          </p>
+          {% endif %}
+        </div>
+        <div class="product-actions">
+          <form method="post" action="{% url 'myapp:add_to_cart' product.product_id %}" class="add-to-cart-form">
+            {% csrf_token %}
+            <input type="hidden" name="quantity" value="1">
+            <button type="submit" class="btn-add-to-cart">
+              <i class="bi bi-cart-plus"></i> Add to Cart
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-lightbulb"></i>
+      <p>No recommendations available yet. Start shopping to get personalized suggestions!</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Sales Trend Chart - Multi-Metric with Dual Y-Axes
+  {% if selected_year and monthly_sales %}
+  // Monthly data
+  const salesLabels = [
+    {% for sale in monthly_sales %}
+    "{{ sale.month|date:'M Y' }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const salesRevenue = [
+    {% for sale in monthly_sales %}
+    {{ sale.revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const salesOrders = [
+    {% for sale in monthly_sales %}
+    {{ sale.orders|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const salesProducts = [
+    {% for sale in monthly_sales %}
+    {{ sale.products|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  {% else %}
+  // Yearly data
+  const salesLabels = [
+    {% for sale in yearly_sales %}
+    "{{ sale.year|date:'Y' }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const salesRevenue = [
+    {% for sale in yearly_sales %}
+    {{ sale.revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const salesOrders = [
+    {% for sale in yearly_sales %}
+    {{ sale.orders|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const salesProducts = [
+    {% for sale in yearly_sales %}
+    {{ sale.products|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  {% endif %}
+
+  const ctx = document.getElementById('salesTrendChart');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: salesLabels,
+      datasets: [
+        {
+          label: 'Number of Orders',
+          data: salesOrders,
+          borderColor: 'rgb(54, 162, 235)',
+          backgroundColor: 'rgba(54, 162, 235, 0.1)',
+          yAxisID: 'y',
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2,
+          fill: false
+        },
+        {
+          label: 'Products Sold',
+          data: salesProducts,
+          borderColor: 'rgb(255, 159, 64)',
+          backgroundColor: 'rgba(255, 159, 64, 0.1)',
+          yAxisID: 'y',
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2,
+          fill: false
+        },
+        {
+          label: 'Revenue ($)',
+          data: salesRevenue,
+          borderColor: 'rgb(75, 192, 192)',
+          backgroundColor: 'rgba(75, 192, 192, 0.1)',
+          yAxisID: 'y1',
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          borderWidth: 2,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        title: {
+          display: true,
+          text: 'Annual Sales Analysis - All Metrics',
+          font: { 
+            size: 16,
+            weight: 'bold'
+          },
+          padding: {
+            bottom: 20
+          }
+        },
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 15,
+            font: {
+              size: 12
+            }
+          }
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.dataset.yAxisID === 'y1') {
+                label += '$' + parseFloat(context.parsed.y).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+              } else {
+                label += context.parsed.y.toLocaleString('en-US');
+              }
+              return label;
+            }
+          },
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          padding: 12,
+          titleFont: {
+            size: 14
+          },
+          bodyFont: {
+            size: 13
+          }
+        }
+      },
+      scales: {
+        y: {
+          type: 'linear',
+          display: true,
+          position: 'left',
+          title: {
+            display: true,
+            text: 'Orders / Products Count',
+            font: {
+              size: 13,
+              weight: 'bold'
+            }
+          },
+          ticks: {
+            precision: 0,
+            callback: function(value) {
+              return value.toLocaleString('en-US');
+            }
+          },
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)'
+          }
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          title: {
+            display: true,
+            text: 'Revenue ($)',
+            font: {
+              size: 13,
+              weight: 'bold'
+            }
+          },
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+            }
+          },
+          beginAtZero: true,
+          grid: {
+            drawOnChartArea: false,
+          }
+        }
+      }
+    }
+  });
+
+  // Top Categories Horizontal Bar Chart
+  {% if top_categories %}
+  const categoryLabels = [
+    {% for cat in top_categories %}
+    "{{ cat.product__category__category_name|default:'Uncategorized' }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const categoryQuantities = [
+    {% for cat in top_categories %}
+    {{ cat.total_quantity|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const categoryRevenue = [
+    {% for cat in top_categories %}
+    {{ cat.total_revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  // Create gradient colors for categories
+  const categoryColors = categoryLabels.map((_, index) => {
+    const hue = 120 + (index * 15);
+    return `hsl(${hue}, 65%, 55%)`;
+  });
+
+  const ctx2 = document.getElementById('topCategoriesChart');
+  new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: categoryLabels,
+      datasets: [{
+        label: 'Quantity Sold',
+        data: categoryQuantities,
+        backgroundColor: categoryColors,
+        borderColor: categoryColors.map(c => c.replace('55%', '45%')),
+        borderWidth: 2
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const index = context.dataIndex;
+              return [
+                `Quantity: ${categoryQuantities[index].toLocaleString()} units`,
+                `Revenue: $${categoryRevenue[index].toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Units Sold'
+          },
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          }
+        },
+        y: {
+          title: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+  {% endif %}
+
+  // Top Products Horizontal Bar Chart
+  {% if top_products %}
+  const productLabels = [
+    {% for product in top_products %}
+    "{{ product.product__product_name|truncatechars:25 }}"{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const productQuantities = [
+    {% for product in top_products %}
+    {{ product.total_quantity|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  const productRevenues = [
+    {% for product in top_products %}
+    {{ product.total_revenue|default:0 }}{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+
+  // Create gradient colors
+  const productColors = productLabels.map((_, index) => {
+    const hue = 200 - (index * 15);
+    return `hsl(${hue}, 70%, 55%)`;
+  });
+
+  const ctx3 = document.getElementById('topProductsChart');
+  new Chart(ctx3, {
+    type: 'bar',
+    data: {
+      labels: productLabels,
+      datasets: [{
+        label: 'Quantity Sold',
+        data: productQuantities,
+        backgroundColor: productColors,
+        borderColor: productColors.map(c => c.replace('55%', '45%')),
+        borderWidth: 2
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const index = context.dataIndex;
+              return [
+                `Quantity: ${productQuantities[index].toLocaleString()} units`,
+                `Revenue: $${productRevenues[index].toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Units Sold'
+          },
+          ticks: {
+            callback: function(value) {
+              return value.toLocaleString();
+            }
+          }
+        },
+        y: {
+          title: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+  {% endif %}
+</script>
+{% endblock %}

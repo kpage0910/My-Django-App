@@ -10,6 +10,10 @@ urlpatterns = [
     # Home
     path('', views.home, name='home'),
     
+    # Authentication URLs
+    path('login/', views.CustomerLoginView.as_view(), name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    
     # Customer URLs
     path('customers/', views.CustomerListView.as_view(), name='customer_list'),
     path('customers/', views.CustomerListView.as_view(), name='customer_list_class'),  # Alias for compatibility
@@ -33,4 +37,10 @@ urlpatterns = [
     path('cart/remove/<int:product_id>/', views.remove_from_cart_view, name='remove_from_cart'),
     path('cart/clear/', views.clear_cart_view, name='clear_cart'),
     path('cart/buy-again/<int:product_id>/', views.buy_again_view, name='buy_again'),
+    
+    # Dashboard URLs (Analytics)
+    path('dashboard/customer/', views.CustomerDashboardView.as_view(), name='customer_dashboard'),
+    path('dashboard/manager/', views.ManagerDashboardView.as_view(), name='manager_dashboard'),
+    path('analytics/products/', views.ProductAnalysisView.as_view(), name='product_analysis'),
+    path('analytics/categories/', views.CategoryAnalysisView.as_view(), name='category_analysis'),
 ]
